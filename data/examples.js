@@ -153,11 +153,11 @@ printf("%3d학년 : 총점 = %d, 등급 = %c\\n", i + 1, score[i], ____[i]);
     },
     fillBlankText: {
       snippet: trimBlock(`
-for (i = 0; i < ____; i++) {
+printf("%3d학년 : 총점 = %d, 등급 = %c\\n", ____ + 1, score[i], grade[i]);
       `),
-      prompt: "배열 전체를 한 번씩 돌기 위한 반복 조건 값은?",
-      answers: ["3"],
-      explanation: "score와 grade 모두 원소가 3개이므로 0, 1, 2까지 돌면 된다.",
+      prompt: "배열 인덱스를 사람이 읽는 번호로 바꿔 주는 변수는?",
+      answers: ["i"],
+      explanation: "배열은 0부터 시작하므로 i에 1을 더해 1학년, 2학년처럼 보여 준다.",
     },
     summary: [
       "서로 대응되는 배열은 같은 인덱스로 함께 읽을 수 있다.",
@@ -236,12 +236,12 @@ for (i = 0; i < 9; i++) {
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-multiply[i] = n * (i + ____);
+multiply[____] = n * (i + 1);
       `),
-      prompt: "1단부터 시작하려면 빈칸은?",
-      options: ["0", "1", "2", "9"],
-      answerIndex: 1,
-      explanation: "i는 0부터 시작하므로 1단을 만들기 위해 1을 더한다.",
+      prompt: "현재 계산 결과가 저장되는 배열 위치 인덱스는?",
+      options: ["i", "n", "i + 1", "multiply"],
+      answerIndex: 0,
+      explanation: "반복문이 현재 처리 중인 위치를 가리키는 인덱스는 i이므로 multiply[i]가 된다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
@@ -396,20 +396,20 @@ for (i = 0; str[i]; i++) {
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-length += ____;
+____ += 1;
       `),
-      prompt: "문자 하나를 셀 때 더해야 하는 값은?",
-      options: ["0", "1", "2", "str[i]"],
-      answerIndex: 1,
-      explanation: "문자 한 개를 읽었으므로 length를 1 증가시킨다.",
+      prompt: "문자 수를 누적하는 변수는?",
+      options: ["length", "i", "str", "gets"],
+      answerIndex: 0,
+      explanation: "문자를 하나 읽을 때마다 길이 누적 변수인 length를 1 증가시킨다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
-gets(____);
+printf("%c", ____[i]);
       `),
-      prompt: "입력 문자열이 저장되는 배열 이름은?",
+      prompt: "현재 출력 중인 문자열 배열 이름은?",
       answers: ["str"],
-      explanation: "사용자 입력은 str 배열에 저장된다.",
+      explanation: "출력도 입력받아 저장한 문자열 배열 str에서 한 글자씩 꺼내 진행한다.",
     },
     summary: [
       "문자열 길이는 문자를 하나씩 세어도 구할 수 있다.",
@@ -495,12 +495,12 @@ array[1][2][3] = 24
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-int array[2][3][____];
+array[i][j][____] = value;
       `),
-      prompt: "세 번째 차원의 크기는?",
-      options: ["2", "3", "4", "5"],
+      prompt: "가장 안쪽 반복에서 바뀌는 인덱스 변수는?",
+      options: ["i", "j", "k", "value"],
       answerIndex: 2,
-      explanation: "마지막 차원은 4칸이다.",
+      explanation: "가장 안쪽 반복문은 k를 증가시키며 같은 행 내부의 칸을 순서대로 채운다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
@@ -597,20 +597,20 @@ Math
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-char student[2][3][____];
+gets(student[____][0]);
       `),
-      prompt: "각 문자열이 저장될 최대 길이 칸 수는?",
-      options: ["3", "10", "20", "30"],
-      answerIndex: 2,
-      explanation: "세 번째 차원이 20이라 문자열 하나당 20칸을 가진다.",
+      prompt: "바깥 반복에서 현재 학생을 가리키는 인덱스 변수는?",
+      options: ["i", "j", "k", "0"],
+      answerIndex: 0,
+      explanation: "학생을 한 명씩 바깥 반복에서 처리하므로 현재 학생 위치는 i가 맡는다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
-for (j = 0; j < ____; j++) {
+for (k = 0; student[i][____][k] != '\\0'; k++) {
       `),
-      prompt: "학생당 출력하는 정보 개수는 몇 개일까요?",
-      answers: ["3"],
-      explanation: "이름, 학과, 학번까지 총 3개를 출력한다.",
+      prompt: "학생 안에서 현재 정보 종류를 가리키는 인덱스 변수는?",
+      answers: ["j"],
+      explanation: "j는 이름, 학과, 학번 같은 정보 종류를 고르고, k는 그 문자열 안의 문자를 돈다.",
     },
     summary: [
       "다차원 문자 배열은 여러 문자열 묶음을 저장하는 데 사용할 수 있다.",
@@ -776,20 +776,20 @@ string1 = Peaces come true!
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-ptr2 = &string1[____];
+ptr2 = &____[7];
       `),
-      prompt: "come true!가 시작되는 인덱스는?",
-      options: ["5", "6", "7", "8"],
-      answerIndex: 2,
-      explanation: "string1[7]부터 'come true!'가 시작된다.",
+      prompt: "부분 문자열의 시작 위치를 잡을 때 기준이 되는 원본 배열 이름은?",
+      options: ["string1", "string2", "ptr1", "ptr2"],
+      answerIndex: 0,
+      explanation: "부분 문자열은 원본 문자 배열 string1 내부의 7번째 위치에서 시작한다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
-*ptr1 = '____';
+string2[i] = *(____ + i);
       `),
-      prompt: "첫 글자를 Peace로 바꾸기 위해 넣는 문자는?",
-      answers: ["P", "p"],
-      explanation: "첫 글자를 P로 바꾸면서 Dreams가 Peaces의 시작으로 바뀐다.",
+      prompt: "string1 내용을 복사할 때 기준이 되는 포인터 이름은?",
+      answers: ["ptr1"],
+      explanation: "ptr1은 string1의 시작을 가리키므로 *(ptr1 + i)로 원본 문자열을 순서대로 복사할 수 있다.",
     },
     summary: [
       "문자열 포인터는 문자열 시작 위치를 옮겨 부분 문자열을 쉽게 읽게 해 준다.",
@@ -858,20 +858,20 @@ Jongno
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-ptrArray[____] = "Jongno";
+char* ____[4] = { { "Korea" },{ "Seoul" },{ "Mapo" },{ "152번지 2 / 3" } };
       `),
-      prompt: "새 문자열을 가리키도록 바뀌는 원소 인덱스는?",
-      options: ["0", "1", "2", "3"],
-      answerIndex: 2,
-      explanation: "세 번째 원소가 바뀌므로 인덱스 2가 들어간다.",
+      prompt: "여러 문자열의 시작 주소를 저장하는 포인터 배열 이름은?",
+      options: ["ptrArray", "ptrptr", "string1", "i"],
+      answerIndex: 0,
+      explanation: "이 예제의 문자열 목록은 ptrArray라는 포인터 배열에 저장된다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
-printf("\\n %s", ____[i]);
+printf("\\n %s", ptrArray[____]);
       `),
-      prompt: "반복문에서 문자열을 꺼내는 포인터 배열 이름은?",
-      answers: ["ptrArray"],
-      explanation: "출력은 ptrArray[i]를 순서대로 읽어 각 문자열을 보여 준다.",
+      prompt: "반복문에서 현재 원소 위치를 가리키는 인덱스 변수는?",
+      answers: ["i"],
+      explanation: "for문의 인덱스 i가 현재 몇 번째 문자열을 출력할지 결정한다.",
     },
     summary: [
       "문자열 포인터 배열은 문자열 목록을 다루기에 편하다.",
@@ -1226,20 +1226,20 @@ fact(5) 값 120 반환!!
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-if (n <= ____ ) {
+value = (n * fact(____));
       `),
-      prompt: "팩토리얼 종료 조건의 기준값은?",
-      options: ["0", "1", "2", "n"],
-      answerIndex: 1,
-      explanation: "이 예제는 n이 1 이하일 때 종료한다.",
+      prompt: "더 작은 문제로 내려갈 때 전달하는 식은?",
+      options: ["n - 1", "n + 1", "value - 1", "fact(n)"],
+      answerIndex: 0,
+      explanation: "팩토리얼은 n! = n x (n-1)! 이므로 재귀 호출에는 n - 1이 들어가야 한다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
-value = (n * fact(____));
+if (____ <= 1) {
       `),
-      prompt: "더 작은 문제로 내려가기 위한 인자는?",
-      answers: ["n - 1", "n-1"],
-      explanation: "n!을 계산하려면 (n-1)!이 필요하다.",
+      prompt: "종료 조건에서 검사하는 변수는?",
+      answers: ["n"],
+      explanation: "재귀를 멈출지 판단하는 기준은 현재 인자 n의 값이다.",
     },
     summary: [
       "재귀 함수에는 반드시 종료 조건이 필요하다.",
@@ -1318,11 +1318,11 @@ hanoi(n - 1, start, target, ____);
     },
     fillBlankText: {
       snippet: trimBlock(`
-if (n == ____ )
+printf(" %c에서 원반 %d를(을) %c로 옮김 \\n", start, n, ____);
       `),
-      prompt: "가장 작은 종료 조건 값은?",
-      answers: ["1"],
-      explanation: "원반이 1개면 바로 옮길 수 있어 재귀를 멈춘다.",
+      prompt: "현재 이동의 도착 기둥을 나타내는 변수는?",
+      answers: ["target"],
+      explanation: "출력문의 마지막 인자는 현재 원반이 도착해야 하는 목표 기둥 target이다.",
     },
     summary: [
       "하노이 탑은 대표적인 재귀 분할 정복 예제다.",
