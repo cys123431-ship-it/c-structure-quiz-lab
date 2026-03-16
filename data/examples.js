@@ -20,16 +20,16 @@ short s, s_array[100];
 float f, f_array[100];
 long l, l_array[100];
         `),
-        question: "이 선언 블록의 핵심 의도는 무엇일까요?",
+        question: "이 블록만 보고 확실히 말할 수 있는 내용은 무엇일까요?",
         options: [
-          "기본 자료형 변수 하나와 같은 자료형 배열을 짝으로 만들어 크기를 비교하려는 준비",
-          "각 자료형의 값을 입력받기 위한 저장공간 준비",
-          "포인터 연산을 테스트하기 위한 메모리 주소 준비",
-          "함수 인자를 여러 개 넘기기 위한 임시 변수 준비",
+          "각 줄마다 같은 자료형의 단일 변수와 배열이 함께 선언되어 있다.",
+          "사용자에게 각 자료형 값을 입력받는 코드가 들어 있다.",
+          "각 변수의 메모리 주소를 저장할 포인터가 선언되어 있다.",
+          "모든 변수에 초기값이 대입되어 있다.",
         ],
         answerIndex: 0,
         explanation:
-          "각 자료형마다 단일 변수와 배열을 나란히 선언해 두었기 때문에, 곧바로 sizeof 결과를 비교하기 좋다.",
+          "이 블록 자체만 보면 '같은 자료형의 변수 1개와 배열 1개를 짝으로 선언했다'는 사실까지는 확실히 읽을 수 있다.",
       },
       {
         label: "블록 2",
@@ -63,20 +63,20 @@ printf("\\n int i 크기 = %d \\t: int i_array 크기 = %4d", sizeof(i), sizeof(
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-char c, c_array[____];
+printf("\\n char c 크기 = %d \\t: char c_array 크기 = %4d", sizeof(c), sizeof(____));
       `),
-      prompt: "배열 칸 수로 들어갈 값은?",
-      options: ["10", "20", "100", "1000"],
-      answerIndex: 2,
-      explanation: "예제에서는 char 배열을 100칸으로 선언했다.",
+      prompt: "char 배열 전체 크기를 재는 두 번째 sizeof 대상은?",
+      options: ["c", "c_array", "i", "i_array"],
+      answerIndex: 1,
+      explanation: "배열 전체 크기를 보고 싶을 때는 배열 이름인 c_array를 그대로 sizeof에 넣는다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
-printf("%4d", sizeof(____));
+printf("\\n char c 크기 = %d \\t: char c_array 크기 = %4d", sizeof(____), sizeof(c_array));
       `),
-      prompt: "char 배열 전체 크기를 출력하려면 빈칸에 무엇이 들어가야 할까요?",
-      answers: ["c_array"],
-      explanation: "배열 전체 크기를 보려면 배열 이름 자체를 sizeof에 넣으면 된다.",
+      prompt: "char 하나의 크기를 재는 첫 번째 sizeof 대상은?",
+      answers: ["c"],
+      explanation: "첫 번째 sizeof는 단일 변수 c의 크기를 출력하는 부분이다.",
     },
     summary: [
       "sizeof(변수)는 자료형 하나의 크기를 보여준다.",
@@ -100,16 +100,16 @@ printf("%4d", sizeof(____));
 int score[3] = { 91, 86, 97 };
 char grade[3] = { 'A','B','A' };
         `),
-        question: "이 블록이 준비하는 데이터 구조는 무엇일까요?",
+        question: "이 블록만 보고 가장 분명하게 말할 수 있는 것은 무엇일까요?",
         options: [
-          "학년별 총점과 등급을 같은 인덱스로 묶어 다루는 구조",
+          "점수 배열과 등급 배열이 같은 길이로 준비되어 있어 같은 인덱스로 함께 읽기 좋다.",
           "문자열 비교를 위한 문자 배열 두 개",
           "포인터 주소를 저장하기 위한 이중 배열",
           "구조체 배열을 대신하는 동적 메모리",
         ],
         answerIndex: 0,
         explanation:
-          "score[0]과 grade[0]이 같은 학년의 정보를 가리키는 식으로 인덱스를 맞춰 둔 예제다.",
+          "두 배열 모두 길이가 3이고, score[i]와 grade[i]를 같은 번호로 묶어 읽는 구조라는 점을 블록만 보고도 확인할 수 있다.",
       },
       {
         label: "블록 2",
@@ -144,12 +144,12 @@ for (i = 0; i < 3; i++) {
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-int score[3] = { 91, 86, ____ };
+printf("%3d학년 : 총점 = %d, 등급 = %c\\n", i + 1, score[i], ____[i]);
       `),
-      prompt: "세 번째 학년 총점은?",
-      options: ["87", "97", "79", "99"],
+      prompt: "등급을 꺼내는 배열 이름은?",
+      options: ["score", "grade", "i", "Lee"],
       answerIndex: 1,
-      explanation: "세 번째 원소는 97이다.",
+      explanation: "등급 문자 A, B, A는 grade 배열에서 꺼내므로 grade[i]가 들어간다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
@@ -312,12 +312,12 @@ for (i = 0; str[i]; i++) {
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-char str[20] = "Data ____!";
+for (i = 0; ____[i]; i++) {
       `),
-      prompt: "빈칸에 들어갈 단어는?",
-      options: ["Science", "Array", "Structure", "Pointer"],
-      answerIndex: 2,
-      explanation: "초기 문자열은 Data Structure! 이다.",
+      prompt: "반복 조건에서 검사하는 문자열 배열 이름은?",
+      options: ["str", "i", "printf", "char"],
+      answerIndex: 0,
+      explanation: "문자열 끝을 확인하려면 현재 문자값인 str[i]를 검사해야 한다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
@@ -858,20 +858,20 @@ Jongno
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-{ "Korea" },{ "Seoul" },{ "____" },{ "152번지 2 / 3" }
+ptrArray[____] = "Jongno";
       `),
-      prompt: "처음 세 번째 원소에 들어 있는 문자열은?",
-      options: ["Mapo", "Jongno", "Busan", "Gangnam"],
-      answerIndex: 0,
-      explanation: "초기값에서는 세 번째 문자열이 Mapo다.",
+      prompt: "새 문자열을 가리키도록 바뀌는 원소 인덱스는?",
+      options: ["0", "1", "2", "3"],
+      answerIndex: 2,
+      explanation: "세 번째 원소가 바뀌므로 인덱스 2가 들어간다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
-ptrArray[2] = "____";
+printf("\\n %s", ____[i]);
       `),
-      prompt: "나중에 세 번째 원소를 바꾸는 문자열은?",
-      answers: ["Jongno"],
-      explanation: "교체 후 출력에서 세 번째 줄은 Jongno가 된다.",
+      prompt: "반복문에서 문자열을 꺼내는 포인터 배열 이름은?",
+      answers: ["ptrArray"],
+      explanation: "출력은 ptrArray[i]를 순서대로 읽어 각 문자열을 보여 준다.",
     },
     summary: [
       "문자열 포인터 배열은 문자열 목록을 다루기에 편하다.",
@@ -1055,12 +1055,12 @@ for (i = 0; i < 4; i++) {
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-{ "이상범", ____, 2900 }
+printf("\\n 연봉 : %d \\n", Lee[i].____);
       `),
-      prompt: "이상범의 입사 연도는?",
-      options: ["2022", "2023", "2024", "2025"],
-      answerIndex: 2,
-      explanation: "네 번째 직원 이상범의 year는 2024이다.",
+      prompt: "연봉을 가리키는 구조체 멤버 이름은?",
+      options: ["year", "pay", "name", "employee"],
+      answerIndex: 1,
+      explanation: "연봉 값은 구조체의 pay 멤버에 저장되어 있다.",
     },
     fillBlankText: {
       snippet: trimBlock(`
@@ -1309,12 +1309,12 @@ A에서 원반 1를(을) C로 옮김
     },
     fillBlankChoice: {
       snippet: trimBlock(`
-hanoi(____, 'A', 'B', 'C');
+hanoi(n - 1, start, target, ____);
       `),
-      prompt: "처음 옮길 원반 개수는?",
-      options: ["1", "2", "3", "4"],
-      answerIndex: 2,
-      explanation: "예제는 원반 3개 기준으로 하노이 이동을 출력한다.",
+      prompt: "첫 번째 재귀 호출에서 보조 기둥 역할로 전달되는 변수는?",
+      options: ["start", "work", "target", "n"],
+      answerIndex: 1,
+      explanation: "첫 번째 재귀 호출은 n-1개 원반을 work 기둥으로 옮기기 위한 호출이라 마지막 인자로 work가 들어간다.",
     },
     fillBlankText: {
       snippet: trimBlock(`

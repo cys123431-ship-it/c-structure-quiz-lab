@@ -332,7 +332,7 @@ async function renderWorkspace() {
           <div class="step-head">
             <div>
               <h3>1. 블록 해석 객관식</h3>
-              <p class="quiz-note">코드를 한 줄이 아니라 의미 있는 덩어리로 읽는 연습입니다.</p>
+              <p class="quiz-note">보이는 블록만 근거로 판단하는 문제입니다. 숨은 맥락 추측보다 코드에 적힌 사실을 먼저 읽어 보세요.</p>
             </div>
             <span class="step-tag">객관식</span>
           </div>
@@ -381,7 +381,7 @@ async function renderWorkspace() {
           <div class="step-head">
             <div>
               <h3>3. 핵심 코드 빈칸</h3>
-              <p class="quiz-note">먼저 객관식으로 핵심 토큰을 잡고, 맞히면 아래 주관식을 풉니다.</p>
+              <p class="quiz-note">원본 코드에서 학습 핵심이 되는 토큰만 비운 문제입니다. 먼저 객관식으로 잡고, 맞히면 아래 주관식을 풉니다.</p>
             </div>
             <span class="step-tag">객관식 → 주관식</span>
           </div>
