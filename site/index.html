@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>C 자료구조 블록 퀴즈</title>
+    <meta
+      name="description"
+      content="자료구조 C 예제를 블록 단위로 해석하고, 출력과 빈칸을 풀어보는 모바일 학습 웹앱"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">C Data Structure Quiz Lab</p>
+          <h1>블록 단위로 읽고,<br />출력과 빈칸까지 푸는 C 예제 학습장</h1>
+          <p class="hero-text">
+            각 예제를 코드 덩어리별로 이해하고, 실행 결과를 예측하고, 핵심 구문을
+            직접 복원하는 순서로 공부할 수 있게 만들었습니다.
+          </p>
+        </div>
+        <div class="hero-stats" id="hero-stats"></div>
+      </header>
+
+      <main class="layout">
+        <section class="lesson-panel">
+          <div class="section-heading">
+            <h2>예제 목록</h2>
+            <p>원하는 예제를 열어서 객관식부터 주관식까지 순서대로 풀어보세요.</p>
+          </div>
+          <div class="lesson-grid" id="lesson-grid"></div>
+        </section>
+
+        <section class="workspace" id="workspace">
+          <div class="empty-state">
+            <h2>예제를 선택하면 학습 카드가 열립니다.</h2>
+            <p>
+              블록 해석, 출력 예측, 빈칸 객관식, 빈칸 주관식을 차례대로 풀 수
+              있습니다.
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
