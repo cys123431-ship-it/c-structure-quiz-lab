@@ -4,6 +4,10 @@
 
 앱 특징:
 
+- 소개 허브 페이지와 기능별 전용 페이지 분리
+- `성취도 / 학습 진행도 / 문제 / 오답노트`를 각각 별도 페이지로 제공
+- 문제 페이지 왼쪽 세로 코드 선택 네비게이터
+- 문제 페이지 상단/하단 `이전 코드 / 다음 코드` 이동
 - 예제별 블록 해석 객관식
 - 샘플 입력 기준 출력 예측
 - 핵심 코드 빈칸 객관식
@@ -20,11 +24,26 @@ python3 -m http.server 4173 --directory site
 
 그 다음 `http://127.0.0.1:4173` 로 접속합니다.
 
+개별 기능 페이지 예시:
+
+- 소개 허브: `http://127.0.0.1:4173/`
+- 성취도: `http://127.0.0.1:4173/achievements.html`
+- 학습 진행도: `http://127.0.0.1:4173/progress.html`
+- 문제 페이지: `http://127.0.0.1:4173/problems.html?lesson=ex02_02`
+- 오답노트: `http://127.0.0.1:4173/review.html`
+
+예전 링크인 `/?lesson=ex02_02` 형태로 접속해도 자동으로 문제 페이지로 이동합니다.
+
 ## 파일 구조
 
-- `site/index.html`: 앱 진입 페이지
-- `site/styles.css`: 모바일 대응 스타일
-- `site/app.js`: 화면 렌더링과 채점 로직
+- `site/index.html`: 소개 허브 페이지
+- `site/achievements.html`: 성취도 페이지
+- `site/progress.html`: 학습 진행도 페이지
+- `site/problems.html`: 문제 전용 페이지
+- `site/review.html`: 오답노트 페이지
+- `site/styles.css`: 공통 스타일
+- `site/scripts/core/`: 공통 상태, 네비게이션, 유틸
+- `site/scripts/pages/`: 페이지별 진입 스크립트
 - `site/data/examples.js`: 15개 예제의 문제/해설 데이터
 - `site/examples/`: 배포용 원본 C 파일 복사본
 

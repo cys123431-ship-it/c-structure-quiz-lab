@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>C 자료구조 블록 퀴즈 | 성취도</title>
+    <meta
+      name="description"
+      content="자료구조 C 예제의 성취도를 한눈에 보고, 마스터드 / 진행중 / 미시작 상태별로 문제 페이지로 이동할 수 있는 성취도 페이지"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .site-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 18px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .site-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .site-brand-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--accent), #2a9d8f);
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .site-brand-copy {
+        display: grid;
+        gap: 3px;
+      }
+
+      .site-brand-copy strong {
+        font-size: 1rem;
+      }
+
+      .site-brand-copy span {
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .site-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .site-nav-link,
+      .brand-chip,
+      .feature-nav-card {
+        text-decoration: none;
+      }
+
+      .site-nav-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 9px 13px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.84);
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .site-nav-link-active {
+        border-color: transparent;
+        background: linear-gradient(90deg, var(--accent), #228b7b);
+        color: #fff;
+        box-shadow: 0 10px 20px rgba(19, 111, 99, 0.18);
+      }
+
+      .brand-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 13px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.82);
+        color: var(--accent-strong);
+        font-weight: 700;
+      }
+
+      .page-summary-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .summary-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.78);
+        color: var(--muted);
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      .hero-actions {
+        margin-top: 18px;
+      }
+
+      .feature-nav-panel {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+
+      .feature-nav-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 12px;
+      }
+
+      .feature-nav-card {
+        display: grid;
+        gap: 10px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 248, 237, 0.9));
+        box-shadow: var(--shadow-md);
+        color: inherit;
+      }
+
+      .feature-nav-card:hover {
+        border-color: rgba(19, 111, 99, 0.24);
+        transform: translateY(-1px);
+      }
+
+      .feature-nav-label {
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .feature-nav-arrow {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .achievement-layout {
+        display: grid;
+        gap: 22px;
+      }
+
+      .achievement-group {
+        display: grid;
+        gap: 16px;
+      }
+
+      .achievement-group-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .achievement-group-count {
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .achievement-group-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+      }
+
+      .achievement-card .lesson-card-title {
+        font-size: 1.04rem;
+      }
+
+      .achievement-card-meta {
+        display: grid;
+        gap: 8px;
+      }
+
+      .achievement-card-note {
+        display: block;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .achievement-card .lesson-progress {
+        margin-top: 4px;
+      }
+
+      @media (max-width: 720px) {
+        .site-header {
+          align-items: flex-start;
+        }
+
+        .site-nav {
+          width: 100%;
+        }
+
+        .brand-chip {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./scripts/pages/achievements.js"></script>
+  </body>
+</html>

@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>학습 진행도 | C 자료구조 블록 퀴즈</title>
+    <meta
+      name="description"
+      content="예제별 학습 진행률, 선택 상태, 오답 현황을 한 번에 보는 전용 진도 페이지"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .progress-page {
+        display: grid;
+        gap: 24px;
+      }
+
+      .site-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 20px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(255, 252, 246, 0.86);
+        box-shadow: var(--shadow-md);
+        backdrop-filter: blur(12px);
+      }
+
+      .site-brand,
+      .brand-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        text-decoration: none;
+      }
+
+      .brand-link {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+
+      .site-brand-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--accent), #1f8d7d);
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        box-shadow: 0 10px 20px rgba(19, 111, 99, 0.16);
+      }
+
+      .site-brand-copy {
+        display: grid;
+        gap: 2px;
+      }
+
+      .site-brand-copy strong,
+      .brand-link strong {
+        font-size: 1rem;
+      }
+
+      .site-brand-copy span,
+      .brand-chip {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .brand-kicker {
+        color: var(--accent);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .site-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .site-nav-link {
+        padding: 8px 12px;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.72);
+        font-weight: 700;
+        transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+      }
+
+      .site-nav-link:hover {
+        transform: translateY(-1px);
+      }
+
+      .site-nav-link-active {
+        color: #fff;
+        background: linear-gradient(90deg, var(--accent), #228b7b);
+        box-shadow: 0 10px 20px rgba(19, 111, 99, 0.16);
+      }
+
+      .brand-chip {
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--accent-soft);
+        text-decoration: none;
+      }
+
+      .page-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+        gap: 20px;
+        align-items: stretch;
+      }
+
+      .hero-panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--paper);
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(14px);
+      }
+
+      .hero-panel-copy {
+        padding: 28px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .hero-panel-stats {
+        padding: 24px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .page-summary-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .summary-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 11px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.8);
+        color: var(--muted);
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .progress-layout {
+        display: grid;
+        gap: 22px;
+      }
+
+      .progress-toolbar,
+      .progress-section,
+      .progress-feature {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--paper);
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(14px);
+      }
+
+      .progress-toolbar,
+      .progress-feature {
+        padding: 22px;
+      }
+
+      .progress-section {
+        padding: 22px;
+      }
+
+      .progress-toolbar {
+        display: grid;
+        gap: 16px;
+      }
+
+      .progress-toolbar-row,
+      .section-head,
+      .lesson-card-head,
+      .lesson-card-meta,
+      .card-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .filter-row,
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .progress-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .progress-section-list {
+        display: grid;
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .bucket-section {
+        display: grid;
+        gap: 14px;
+      }
+
+      .bucket-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .bucket-empty {
+        padding: 18px;
+        border: 1px dashed rgba(90, 72, 46, 0.2);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--muted);
+      }
+
+      .lesson-card {
+        display: grid;
+        gap: 14px;
+      }
+
+      .lesson-card-progress {
+        display: grid;
+        gap: 8px;
+      }
+
+      .lesson-card-progress-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .lesson-card-foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .status-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .lesson-badge-selected {
+        color: var(--accent-strong);
+        background: rgba(19, 111, 99, 0.1);
+      }
+
+      .lesson-badge-active {
+        color: var(--warm);
+        background: var(--warm-soft);
+      }
+
+      .progress-feature-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .feature-nav-panel {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--paper);
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(14px);
+      }
+
+      .feature-nav-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .feature-nav-card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.78);
+        text-decoration: none;
+        display: grid;
+        gap: 4px;
+      }
+
+      .feature-nav-card:hover,
+      .feature-card:hover {
+        transform: translateY(-1px);
+      }
+
+      .feature-nav-label {
+        font-weight: 700;
+      }
+
+      .feature-nav-arrow {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .feature-card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.78);
+        text-decoration: none;
+        display: grid;
+        gap: 4px;
+      }
+
+      .feature-card strong {
+        font-size: 0.98rem;
+      }
+
+      .feature-card span {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .section-title {
+        margin: 0 0 8px;
+        font-size: 1.35rem;
+      }
+
+      .section-copy,
+      .lesson-card-copy,
+      .progress-note,
+      .hero-note {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .section-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      .section-badge.is-hot {
+        color: var(--danger);
+        background: var(--danger-soft);
+        border-color: transparent;
+      }
+
+      @media (max-width: 1080px) {
+        .page-hero,
+        .progress-summary-grid,
+        .progress-feature-grid,
+        .feature-nav-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .page-hero,
+        .progress-summary-grid,
+        .progress-feature-grid,
+        .feature-nav-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-panel-copy,
+        .hero-panel-stats,
+        .progress-toolbar,
+        .progress-section,
+        .progress-feature {
+          padding: 20px;
+        }
+
+        .site-header {
+          padding: 14px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./scripts/pages/progress.js"></script>
+  </body>
+</html>
