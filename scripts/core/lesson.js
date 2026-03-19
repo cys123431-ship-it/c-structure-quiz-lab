@@ -1,10 +1,24 @@
-import { examples } from "./data/examples.js";
+import {
+  REVIEW_FILTERS,
+  ensureProgress,
+  examples,
+  getEmptyListMessage,
+  getExampleById,
+  getFilterLabel,
+  getGlobalStats,
+  getLessonHref,
+  getLessonNeighbors,
+  getLessonStatus,
+  getOutputStatus,
+  getVisibleExamples,
+} from "./store.js";
+import {
+  escapeHtml,
+  normalizeFullCode,
+  normalizeOutput,
+  normalizeTokenAnswer,
+} from "./utils.js";
 
-const app = document.querySelector("#app");
-
-const STORAGE_KEY = "c-structure-quiz-progress-v2";
-const UI_STATE_KEY = "c-structure-quiz-ui-v1";
-const REVIEW_FILTERS = ["all", "selected", "wrong", "selected-wrong"];
 const RECONSTRUCTION_STAGE_LIMITS = {
   lite: 3,
   dense: 6,
@@ -37,355 +51,7 @@ const COMMON_IDENTIFIER_TOKENS = new Set([
   "const",
 ]);
 
-const persistedUiState = loadUiState();
-
-const state = {
-  view: getInitialView(),
-  selectedId: getInitialSelectedId(persistedUiState.lastViewedId),
-  sourceCache: {},
-  reconstructionCache: {},
-  progress: loadProgress(),
-  selectedLessons: new Set(persistedUiState.selectedLessons),
-  filter: persistedUiState.filter,
-  renderToken: 0,
-};
-
-function isValidExampleId(id) {
-  return examples.some((example) => example.id === id);
-}
-
-function getInitialView() {
-  const params = new URLSearchParams(window.location.search);
-  const lessonId = params.get("lesson");
-  const hashId = window.location.hash.replace("#", "");
-
-  return isValidExampleId(lessonId) || isValidExampleId(hashId) ? "lesson" : "home";
-}
-
-function getInitialSelectedId(lastViewedId) {
-  const params = new URLSearchParams(window.location.search);
-  const lessonId = params.get("lesson");
-  const hashId = window.location.hash.replace("#", "");
-
-  if (isValidExampleId(lessonId)) {
-    return lessonId;
-  }
-
-  if (isValidExampleId(hashId)) {
-    return hashId;
-  }
-
-  if (isValidExampleId(lastViewedId)) {
-    return lastViewedId;
-  }
-
-  return examples[0].id;
-}
-
-function createDefaultProgress() {
-  return {
-    blocks: {},
-    outputAnswer: "",
-    outputChecked: null,
-    outputReveal: false,
-    blankChoiceAnswer: null,
-    blankChoiceChecked: null,
-    blankTextAnswer: "",
-    blankTextChecked: null,
-    reconstructionLiteAnswers: [],
-    reconstructionLiteChecked: null,
-    reconstructionDenseAnswers: [],
-    reconstructionDenseChecked: null,
-    fullCodeAnswer: "",
-    fullCodeChecked: null,
-  };
-}
-
-function loadProgress() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function loadUiState() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(UI_STATE_KEY) || "{}");
-    const filter = REVIEW_FILTERS.includes(parsed.filter) ? parsed.filter : "all";
-    const selectedLessons = Array.isArray(parsed.selectedLessons)
-      ? parsed.selectedLessons.filter(isValidExampleId)
-      : [];
-    const lastViewedId = isValidExampleId(parsed.lastViewedId) ? parsed.lastViewedId : examples[0].id;
-
-    return {
-      filter,
-      selectedLessons,
-      lastViewedId,
-    };
-  } catch {
-    return {
-      filter: "all",
-      selectedLessons: [],
-      lastViewedId: examples[0].id,
-    };
-  }
-}
-
-function saveProgress() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.progress));
-}
-
-function saveUiState() {
-  localStorage.setItem(
-    UI_STATE_KEY,
-    JSON.stringify({
-      filter: state.filter,
-      selectedLessons: Array.from(state.selectedLessons),
-      lastViewedId: state.selectedId,
-    })
-  );
-}
-
-function ensureProgress(id) {
-  if (!state.progress[id]) {
-    state.progress[id] = createDefaultProgress();
-  }
-
-  return state.progress[id];
-}
-
-function escapeHtml(text) {
-  return String(text)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function normalizeOutput(text, compareMode = "default") {
-  let normalized = String(text ?? "").replaceAll("\r\n", "\n").replaceAll("\t", " ");
-
-  if (compareMode === "addressAware") {
-    normalized = normalized
-      .replace(/0x[0-9a-fA-F]+/g, "<addr>")
-      .replace(/\b\d{8,}\b/g, "<addr>");
-  }
-
-  return normalized
-    .split("\n")
-    .map((line) => line.replace(/\s+/g, " ").trim())
-    .filter((line, index, lines) => !(line === "" && lines[index - 1] === ""))
-    .join("\n")
-    .trim();
-}
-
-function normalizeTokenAnswer(text) {
-  return String(text ?? "")
-    .trim()
-    .replace(/\s+/g, "")
-    .replace(/;$/, "")
-    .toLowerCase();
-}
-
-function normalizeFullCode(text) {
-  return String(text ?? "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\/\/.*$/gm, "")
-    .replace(/\s+/g, "")
-    .toLowerCase();
-}
-
-function getExampleById(id) {
-  return examples.find((example) => example.id === id) || examples[0];
-}
-
-function getOutputStatus(progress) {
-  if (progress.outputChecked === true) {
-    return true;
-  }
-
-  if (progress.outputChecked === false || progress.outputReveal) {
-    return false;
-  }
-
-  return null;
-}
-
-function getLessonStatus(example) {
-  const progress = ensureProgress(example.id);
-  const statuses = [];
-
-  example.blocks.forEach((_, index) => {
-    const blockProgress = progress.blocks[index];
-    if (!blockProgress?.checked) {
-      statuses.push(null);
-    } else {
-      statuses.push(blockProgress.correct === true);
-    }
-  });
-
-  statuses.push(getOutputStatus(progress));
-  statuses.push(progress.blankChoiceChecked);
-  statuses.push(progress.blankTextChecked);
-  statuses.push(progress.reconstructionLiteChecked);
-  statuses.push(progress.reconstructionDenseChecked);
-  statuses.push(progress.fullCodeChecked);
-
-  const total = statuses.length;
-  const correct = statuses.filter((status) => status === true).length;
-  const wrong = statuses.filter((status) => status === false).length;
-
-  return { statuses, total, correct, wrong };
-}
-
-function getGlobalStats() {
-  let solvedItems = 0;
-  let totalItems = 0;
-  let completedLessons = 0;
-  let wrongItems = 0;
-
-  examples.forEach((example) => {
-    const lessonStatus = getLessonStatus(example);
-    solvedItems += lessonStatus.correct;
-    totalItems += lessonStatus.total;
-    wrongItems += lessonStatus.wrong;
-
-    if (lessonStatus.correct === lessonStatus.total) {
-      completedLessons += 1;
-    }
-  });
-
-  return {
-    lessonCount: examples.length,
-    solvedItems,
-    totalItems,
-    completedLessons,
-    wrongItems,
-    selectedLessons: state.selectedLessons.size,
-  };
-}
-
-function getVisibleExamples() {
-  if (state.filter === "all") {
-    return examples;
-  }
-
-  if (state.filter === "selected") {
-    return examples.filter((example) => state.selectedLessons.has(example.id));
-  }
-
-  if (state.filter === "wrong") {
-    return examples.filter((example) => getLessonStatus(example).wrong > 0);
-  }
-
-  if (state.filter === "selected-wrong") {
-    return examples.filter(
-      (example) => state.selectedLessons.has(example.id) && getLessonStatus(example).wrong > 0
-    );
-  }
-
-  return examples;
-}
-
-function getFilterLabel(filter) {
-  if (filter === "selected") {
-    return "선택만";
-  }
-
-  if (filter === "wrong") {
-    return "오답 반복";
-  }
-
-  if (filter === "selected-wrong") {
-    return "선택 오답";
-  }
-
-  return "전체";
-}
-
-function getEmptyListMessage() {
-  if (state.filter === "selected") {
-    return "선택한 예제가 없습니다. 체크박스로 예제를 먼저 선택해 주세요.";
-  }
-
-  if (state.filter === "wrong") {
-    return "현재 오답 문항이 없습니다. 전체 모드에서 새 문제를 풀어 보세요.";
-  }
-
-  if (state.filter === "selected-wrong") {
-    return "선택한 예제 안에 아직 오답 문항이 없습니다.";
-  }
-
-  return "표시할 예제가 없습니다.";
-}
-
-function getLessonHref(id) {
-  return `./?lesson=${encodeURIComponent(id)}`;
-}
-
-function getLessonNeighbors(currentId) {
-  const visibleExamples = getVisibleExamples();
-  const sequence = visibleExamples.some((example) => example.id === currentId)
-    ? visibleExamples
-    : examples;
-  let currentIndex = sequence.findIndex((example) => example.id === currentId);
-
-  if (currentIndex === -1) {
-    currentIndex = 0;
-  }
-
-  return {
-    sequence,
-    currentIndex,
-    previous: sequence[(currentIndex - 1 + sequence.length) % sequence.length],
-    next: sequence[(currentIndex + 1) % sequence.length],
-  };
-}
-
-function renderHeroStats() {
-  const stats = getGlobalStats();
-  const current = getExampleById(state.selectedId);
-  const currentScore = getLessonStatus(current);
-
-  return `
-    <div class="hero-stats">
-      <div>
-        <p class="eyebrow">Study Progress</p>
-        <p class="meta-copy">목록 페이지에서 예제를 고르고, 문제 페이지에서는 이전 코드와 다음 코드로 이어서 넘기며 학습할 수 있습니다.</p>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-label">예제 수</span>
-          <span class="stat-value">${stats.lessonCount}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">완료한 예제</span>
-          <span class="stat-value">${stats.completedLessons}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">맞힌 문항</span>
-          <span class="stat-value">${stats.solvedItems}/${stats.totalItems}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">오답 문항</span>
-          <span class="stat-value">${stats.wrongItems}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">선택한 예제</span>
-          <span class="stat-value">${stats.selectedLessons}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">최근 본 예제 진도</span>
-          <span class="stat-value">${currentScore.correct}/${currentScore.total}</span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function renderFilterButton(filter, label) {
+export function renderFilterButton(state, filter, label) {
   return `
     <button
       class="chip-btn ${state.filter === filter ? "chip-btn-active" : ""}"
@@ -397,19 +63,19 @@ function renderFilterButton(filter, label) {
   `;
 }
 
-function renderControlPanel() {
-  const stats = getGlobalStats();
-  const visibleCount = getVisibleExamples().length;
+export function renderControlPanel(state) {
+  const stats = getGlobalStats(state);
+  const visibleCount = getVisibleExamples(state).length;
 
   return `
     <div class="control-panel">
       <div class="mode-group">
         <span class="mode-label">보기 모드</span>
         <div class="mode-buttons">
-          ${renderFilterButton("all", "전체")}
-          ${renderFilterButton("selected", "선택만")}
-          ${renderFilterButton("wrong", "오답 반복")}
-          ${renderFilterButton("selected-wrong", "선택 오답")}
+          ${renderFilterButton(state, "all", "전체")}
+          ${renderFilterButton(state, "selected", "선택만")}
+          ${renderFilterButton(state, "wrong", "오답 반복")}
+          ${renderFilterButton(state, "selected-wrong", "선택 오답")}
         </div>
       </div>
       <div class="mode-group">
@@ -425,42 +91,36 @@ function renderControlPanel() {
   `;
 }
 
-function renderHomeLessonGrid() {
-  const visibleExamples = getVisibleExamples();
+export function renderProblemSelector(state) {
+  const visibleExamples = getVisibleExamples(state);
 
   if (visibleExamples.length === 0) {
     return `
       <div class="empty-list">
-        <p>${escapeHtml(getEmptyListMessage())}</p>
+        <p>${escapeHtml(getEmptyListMessage(state.filter))}</p>
       </div>
     `;
   }
 
   return `
-    <div class="lesson-grid lesson-grid-home">
+    <div class="problem-nav-list">
       ${visibleExamples
         .map((example) => {
-          const lessonStatus = getLessonStatus(example);
+          const lessonStatus = getLessonStatus(state, example);
           const percent = Math.round((lessonStatus.correct / lessonStatus.total) * 100);
           const isSelected = state.selectedLessons.has(example.id);
           const isActive = example.id === state.selectedId;
 
           return `
-            <article class="lesson-card ${isActive ? "lesson-card-active" : ""}">
-              <div class="lesson-card-head">
+            <article class="problem-nav-card ${isActive ? "problem-nav-card-active" : ""}">
+              <button class="problem-nav-button" data-action="select-lesson" data-lesson-id="${example.id}">
                 <span class="lesson-code">${escapeHtml(example.file)}</span>
-                <a class="btn btn-secondary btn-inline" href="${getLessonHref(example.id)}">문제 페이지</a>
-              </div>
-              <div>
-                <h3 class="lesson-card-title">${escapeHtml(example.title)}</h3>
-                <p class="lesson-theme">${escapeHtml(example.theme)}</p>
-              </div>
-              <p class="small-note">${escapeHtml(example.goal)}</p>
+                <strong class="problem-nav-title">${escapeHtml(example.title)}</strong>
+                <span class="lesson-theme">${escapeHtml(example.theme)}</span>
+              </button>
               <div class="lesson-badges">
                 <span class="lesson-badge">진도 ${lessonStatus.correct}/${lessonStatus.total}</span>
-                <span class="lesson-badge ${lessonStatus.wrong > 0 ? "lesson-badge-wrong" : ""}">
-                  오답 ${lessonStatus.wrong}
-                </span>
+                <span class="lesson-badge ${lessonStatus.wrong > 0 ? "lesson-badge-wrong" : ""}">오답 ${lessonStatus.wrong}</span>
               </div>
               <div class="lesson-progress">
                 <span class="progress-bar"><span style="width:${percent}%"></span></span>
@@ -483,39 +143,22 @@ function renderHomeLessonGrid() {
   `;
 }
 
-function renderHomePage() {
-  document.title = "C 자료구조 블록 퀴즈";
-
-  app.innerHTML = `
-    <div class="page-shell">
-      <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">C Data Structure Quiz Lab</p>
-          <h1>문제 목록과 문제 페이지를<br />분리한 C 예제 학습장</h1>
-          <p class="hero-text">
-            목록에서 원하는 예제를 고르면 전용 문제 페이지로 이동합니다.
-            문제 페이지에서는 한 코드에 집중해서 풀고, 아래의 이전 코드와 다음 코드 버튼으로
-            자연스럽게 이어서 공부할 수 있습니다.
-          </p>
-        </div>
-        ${renderHeroStats()}
-      </header>
-
-      <main class="home-layout">
-        <section class="lesson-panel lesson-browser">
-          <div class="section-heading">
-            <h2>예제 목록</h2>
-            <p>이제 각 예제는 별도 문제 페이지로 열립니다. 원하는 코드를 골라 들어가세요.</p>
-          </div>
-          ${renderControlPanel()}
-          ${renderHomeLessonGrid()}
-        </section>
-      </main>
-    </div>
+export function renderProblemSidebar(state) {
+  return `
+    <section class="lesson-panel detail-tools problem-sidebar">
+      <div class="section-heading">
+        <h2>문제 탐색기</h2>
+        <p>코드를 세로 목록에서 골라서 바로 문제를 풀 수 있습니다.</p>
+      </div>
+      ${renderControlPanel(state)}
+      <div class="problem-nav-shell">
+        ${renderProblemSelector(state)}
+      </div>
+    </section>
   `;
 }
 
-async function loadSource(example) {
+export async function loadSource(state, example) {
   if (state.sourceCache[example.id]) {
     return state.sourceCache[example.id];
   }
@@ -650,7 +293,7 @@ function buildMaskedCode(source, tokens) {
   return { masked, answers };
 }
 
-function getReconstructionData(example, source) {
+export function getReconstructionData(state, example, source) {
   if (state.reconstructionCache[example.id]) {
     return state.reconstructionCache[example.id];
   }
@@ -817,12 +460,12 @@ function renderLockedMessage(message) {
   return `<p class="meta-copy">${escapeHtml(message)}</p>`;
 }
 
-function renderLessonTopNav(example) {
-  const { sequence, currentIndex, previous, next } = getLessonNeighbors(example.id);
+function renderLessonTopNav(state, example) {
+  const { sequence, currentIndex, previous, next } = getLessonNeighbors(state, example.id);
 
   return `
     <div class="detail-nav">
-      <a class="btn btn-secondary" href="./">예제 목록</a>
+      <a class="btn btn-secondary" href="./index.html">기능 허브</a>
       <div class="detail-status">
         <span class="pill">${currentIndex + 1} / ${sequence.length}</span>
         <span class="pill">${escapeHtml(example.file)}</span>
@@ -837,27 +480,15 @@ function renderLessonTopNav(example) {
   `;
 }
 
-function renderLessonFooterNav(example) {
-  const { previous, next } = getLessonNeighbors(example.id);
+function renderLessonFooterNav(state, example) {
+  const { previous, next } = getLessonNeighbors(state, example.id);
 
   return `
     <div class="footer-nav footer-nav-split">
       <a class="btn btn-secondary" href="${getLessonHref(previous.id)}">이전 코드</a>
-      <a class="btn btn-secondary" href="./">목록으로</a>
+      <a class="btn btn-secondary" href="./progress.html">진행도</a>
       <a class="btn btn-primary" href="${getLessonHref(next.id)}">다음 코드</a>
     </div>
-  `;
-}
-
-function renderLessonSettings() {
-  return `
-    <section class="lesson-panel detail-tools">
-      <div class="section-heading">
-        <h2>학습 설정</h2>
-        <p>문제 페이지에서도 보기 모드와 초기화를 바로 바꿀 수 있습니다.</p>
-      </div>
-      ${renderControlPanel()}
-    </section>
   `;
 }
 
@@ -879,11 +510,11 @@ function renderStageNav(stageLinks) {
   `;
 }
 
-function renderLessonBody(example, source) {
-  const progress = ensureProgress(example.id);
-  const lessonStatus = getLessonStatus(example);
+function renderLessonBody(state, example, source) {
+  const progress = ensureProgress(state, example.id);
+  const lessonStatus = getLessonStatus(state, example);
   const reviewOnly = state.filter === "wrong" || state.filter === "selected-wrong";
-  const reconstruction = getReconstructionData(example, source);
+  const reconstruction = getReconstructionData(state, example, source);
   const outputStatus = getOutputStatus(progress);
   const blankTextUnlocked = progress.blankChoiceChecked === true || reviewOnly;
   const liteUnlocked = progress.blankTextChecked === true || reviewOnly;
@@ -1202,45 +833,29 @@ function renderLessonBody(example, source) {
       }
     </section>
 
-    ${renderLessonFooterNav(example)}
+    ${renderLessonFooterNav(state, example)}
   `;
 }
 
-function renderLessonLoading(example) {
-  document.title = `${example.file} | C 자료구조 블록 퀴즈`;
-
-  app.innerHTML = `
-    <div class="page-shell">
-      ${renderLessonTopNav(example)}
-      <div class="detail-layout">
-        ${renderLessonSettings()}
-        <div class="card">
-          <p class="meta-copy">예제를 불러오는 중입니다...</p>
-        </div>
+export function renderLessonLoading(state, example) {
+  return `
+    ${renderLessonTopNav(state, example)}
+    <div class="detail-layout">
+      ${renderProblemSidebar(state)}
+      <div class="card">
+        <p class="meta-copy">예제를 불러오는 중입니다...</p>
       </div>
     </div>
   `;
 }
 
-async function renderLessonPage() {
-  const example = getExampleById(state.selectedId);
-  const requestToken = ++state.renderToken;
-
-  renderLessonLoading(example);
-  const source = await loadSource(example);
-
-  if (requestToken !== state.renderToken || state.view !== "lesson" || state.selectedId !== example.id) {
-    return;
-  }
-
-  app.innerHTML = `
-    <div class="page-shell">
-      ${renderLessonTopNav(example)}
-      <div class="detail-layout">
-        ${renderLessonSettings()}
-        <div class="card">
-          ${renderLessonBody(example, source)}
-        </div>
+export function renderLessonReady(state, example, source) {
+  return `
+    ${renderLessonTopNav(state, example)}
+    <div class="detail-layout">
+      ${renderProblemSidebar(state)}
+      <div class="card">
+        ${renderLessonBody(state, example, source)}
       </div>
     </div>
   `;
@@ -1260,15 +875,26 @@ function checkTokenArrayAnswers(userAnswers, expectedAnswers) {
   );
 }
 
-function resetLessonProgress(id) {
-  state.progress[id] = createDefaultProgress();
+function resetLessonProgress(state, id) {
+  state.progress[id] = {
+    blocks: {},
+    outputAnswer: "",
+    outputChecked: null,
+    outputReveal: false,
+    blankChoiceAnswer: null,
+    blankChoiceChecked: null,
+    blankTextAnswer: "",
+    blankTextChecked: null,
+    reconstructionLiteAnswers: [],
+    reconstructionLiteChecked: null,
+    reconstructionDenseAnswers: [],
+    reconstructionDenseChecked: null,
+    fullCodeAnswer: "",
+    fullCodeChecked: null,
+  };
 }
 
-function confirmReset(message) {
-  return window.confirm(message);
-}
-
-function openCodeSection() {
+export function openCodeSection() {
   const codeSection = document.querySelector("#lesson-code");
 
   if (codeSection instanceof HTMLDetailsElement) {
@@ -1276,23 +902,11 @@ function openCodeSection() {
   }
 }
 
-function rerender() {
-  saveProgress();
-  saveUiState();
-
-  if (state.view === "lesson") {
-    renderLessonPage();
-    return;
-  }
-
-  renderHomePage();
-}
-
-document.addEventListener("change", (event) => {
+export function handleLessonChange(event, { state, rerender }) {
   const checkbox = event.target.closest('[data-action="toggle-lesson-selection"]');
 
   if (!checkbox) {
-    return;
+    return false;
   }
 
   const lessonId = checkbox.dataset.lessonId;
@@ -1304,9 +918,10 @@ document.addEventListener("change", (event) => {
   }
 
   rerender();
-});
+  return true;
+}
 
-document.addEventListener("click", async (event) => {
+export async function handleLessonClick(event, { state, rerender, navigateToLesson }) {
   const codeStageLink = event.target.closest('.stage-link[href="#lesson-code"]');
 
   if (codeStageLink) {
@@ -1316,57 +931,71 @@ document.addEventListener("click", async (event) => {
   const actionButton = event.target.closest("[data-action]");
 
   if (!actionButton) {
-    return;
+    return false;
   }
 
   const action = actionButton.dataset.action;
+
+  if (action === "select-lesson") {
+    const lessonId = actionButton.dataset.lessonId;
+    if (lessonId) {
+      state.selectedId = lessonId;
+      navigateToLesson(lessonId);
+      rerender();
+    }
+    return true;
+  }
 
   if (action === "set-filter") {
     const filter = actionButton.dataset.filter;
 
     if (REVIEW_FILTERS.includes(filter)) {
       state.filter = filter;
+      if (!getVisibleExamples(state).some((example) => example.id === state.selectedId)) {
+        state.selectedId = getVisibleExamples(state)[0]?.id || examples[0].id;
+        navigateToLesson(state.selectedId);
+      }
       rerender();
     }
 
-    return;
+    return true;
   }
 
   const example = getExampleById(state.selectedId);
-  const progress = ensureProgress(example.id);
+  const progress = ensureProgress(state, example.id);
 
   if (action === "reset-current") {
-    if (!confirmReset(`${example.file} 진행 상황을 초기화할까요?`)) {
-      return;
+    if (!window.confirm(`${example.file} 진행 상황을 초기화할까요?`)) {
+      return true;
     }
 
-    resetLessonProgress(example.id);
+    resetLessonProgress(state, example.id);
     rerender();
-    return;
+    return true;
   }
 
   if (action === "reset-selected") {
     if (state.selectedLessons.size === 0) {
-      return;
+      return true;
     }
 
-    if (!confirmReset(`선택한 ${state.selectedLessons.size}개 예제 진행 상황을 초기화할까요?`)) {
-      return;
+    if (!window.confirm(`선택한 ${state.selectedLessons.size}개 예제 진행 상황을 초기화할까요?`)) {
+      return true;
     }
 
-    state.selectedLessons.forEach((lessonId) => resetLessonProgress(lessonId));
+    state.selectedLessons.forEach((lessonId) => resetLessonProgress(state, lessonId));
     rerender();
-    return;
+    return true;
   }
 
   if (action === "reset-all") {
-    if (!confirmReset("전체 예제 진행 상황을 모두 초기화할까요?")) {
-      return;
+    if (!window.confirm("전체 예제 진행 상황을 모두 초기화할까요?")) {
+      return true;
     }
 
     state.progress = {};
     rerender();
-    return;
+    return true;
   }
 
   if (action === "check-block") {
@@ -1389,7 +1018,7 @@ document.addEventListener("click", async (event) => {
     }
 
     rerender();
-    return;
+    return true;
   }
 
   if (action === "check-output") {
@@ -1400,7 +1029,7 @@ document.addEventListener("click", async (event) => {
       normalizeOutput(progress.outputAnswer, example.output.compareMode) ===
       normalizeOutput(example.output.expected, example.output.compareMode);
     rerender();
-    return;
+    return true;
   }
 
   if (action === "reveal-output") {
@@ -1409,7 +1038,7 @@ document.addEventListener("click", async (event) => {
     progress.outputReveal = true;
     progress.outputChecked = false;
     rerender();
-    return;
+    return true;
   }
 
   if (action === "check-blank-choice") {
@@ -1432,7 +1061,7 @@ document.addEventListener("click", async (event) => {
     }
 
     rerender();
-    return;
+    return true;
   }
 
   if (action === "check-blank-text") {
@@ -1449,12 +1078,12 @@ document.addEventListener("click", async (event) => {
     }
 
     rerender();
-    return;
+    return true;
   }
 
   if (action === "check-reconstruction-lite") {
-    const source = await loadSource(example);
-    const reconstruction = getReconstructionData(example, source);
+    const source = await loadSource(state, example);
+    const reconstruction = getReconstructionData(state, example, source);
     progress.reconstructionLiteAnswers = getInputValues(
       "reconstruction-lite",
       reconstruction.lite.answers.length
@@ -1470,12 +1099,12 @@ document.addEventListener("click", async (event) => {
     }
 
     rerender();
-    return;
+    return true;
   }
 
   if (action === "check-reconstruction-dense") {
-    const source = await loadSource(example);
-    const reconstruction = getReconstructionData(example, source);
+    const source = await loadSource(state, example);
+    const reconstruction = getReconstructionData(state, example, source);
     progress.reconstructionDenseAnswers = getInputValues(
       "reconstruction-dense",
       reconstruction.dense.answers.length
@@ -1490,23 +1119,18 @@ document.addEventListener("click", async (event) => {
     }
 
     rerender();
-    return;
+    return true;
   }
 
   if (action === "check-full-code") {
-    const source = await loadSource(example);
+    const source = await loadSource(state, example);
     const textarea = document.querySelector("#full-code-answer");
     progress.fullCodeAnswer = textarea?.value ?? "";
     progress.fullCodeChecked =
       normalizeFullCode(progress.fullCodeAnswer) === normalizeFullCode(source);
     rerender();
+    return true;
   }
-});
 
-window.addEventListener("hashchange", () => {
-  if (window.location.hash === "#lesson-code") {
-    openCodeSection();
-  }
-});
-
-rerender();
+  return false;
+}
