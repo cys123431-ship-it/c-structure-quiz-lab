@@ -28,9 +28,12 @@ export function renderSiteNav(currentKey) {
 
   return `
     <header class="site-header">
-      <a class="brand-link" href="./">
-        <span class="brand-kicker">C Study Lab</span>
-        <strong>C 자료구조 블록 퀴즈</strong>
+      <a class="site-brand" href="./index.html">
+        <span class="site-brand-mark">DS</span>
+        <span class="site-brand-copy">
+          <strong>C 자료구조 블록 퀴즈</strong>
+          <span>학습 허브</span>
+        </span>
       </a>
       <nav class="site-nav" aria-label="주요 페이지">
         ${PAGE_LINKS.map(

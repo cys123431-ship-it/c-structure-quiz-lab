@@ -133,7 +133,7 @@ function renderPage() {
   document.title = "오답노트 | C 자료구조 블록 퀴즈";
 
   app.innerHTML = `
-    <div class="page-shell">
+    <div class="page-shell feature-page review-page">
       ${renderSiteNav("review")}
       <header class="hero">
         <div class="hero-copy">

@@ -48,7 +48,7 @@ function renderPageShell(body) {
   const stats = getGlobalStats(state);
 
   return `
-    <div class="page-shell">
+    <div class="page-shell feature-page problems-page">
       ${renderSiteNav("problems")}
       <section class="hero hero-page">
         ${renderHeroCard({
