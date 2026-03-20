@@ -492,29 +492,43 @@ function renderLessonFooterNav(state, example) {
   `;
 }
 
-function renderStageNav(stageLinks) {
-  if (stageLinks.length === 0) {
-    return "";
+function ensureProblemStepState(state) {
+  if (!state.problemStepByLesson || typeof state.problemStepByLesson !== "object") {
+    state.problemStepByLesson = {};
   }
-
-  return `
-    <nav class="stage-nav" aria-label="문제 단계 빠른 이동">
-      ${stageLinks
-        .map(
-          (stage) => `
-            <a class="stage-link" href="${stage.href}">${escapeHtml(stage.label)}</a>
-          `
-        )
-        .join("")}
-    </nav>
-  `;
 }
 
-function renderLessonBody(state, example, source) {
+function getStoredProblemStep(state, lessonId) {
+  ensureProblemStepState(state);
+  const value = state.problemStepByLesson[lessonId];
+  return Number.isInteger(value) && value >= 0 ? value : 0;
+}
+
+function setStoredProblemStep(state, lessonId, index) {
+  ensureProblemStepState(state);
+  state.problemStepByLesson[lessonId] = Math.max(0, index);
+}
+
+function getClampedProblemStep(state, lessonId, total) {
+  const current = getStoredProblemStep(state, lessonId);
+
+  if (total <= 0) {
+    setStoredProblemStep(state, lessonId, 0);
+    return 0;
+  }
+
+  const clamped = Math.min(current, total - 1);
+  if (clamped !== current) {
+    setStoredProblemStep(state, lessonId, clamped);
+  }
+
+  return clamped;
+}
+
+export function getLessonProblemFlow(state, example) {
   const progress = ensureProgress(state, example.id);
   const lessonStatus = getLessonStatus(state, example);
   const reviewOnly = state.filter === "wrong" || state.filter === "selected-wrong";
-  const reconstruction = getReconstructionData(state, example, source);
   const outputStatus = getOutputStatus(progress);
   const blankTextUnlocked = progress.blankChoiceChecked === true || reviewOnly;
   const liteUnlocked = progress.blankTextChecked === true || reviewOnly;
@@ -531,64 +545,336 @@ function renderLessonBody(state, example, source) {
   const showReconstructionLite = !reviewOnly || progress.reconstructionLiteChecked === false;
   const showReconstructionDense = !reviewOnly || progress.reconstructionDenseChecked === false;
   const showFullCode = !reviewOnly || progress.fullCodeChecked === false;
-  const visibleQuestionCount =
-    visibleBlockCards.length +
-    Number(showOutput) +
-    Number(showBlankChoice) +
-    Number(showBlankText) +
-    Number(showReconstructionLite) +
-    Number(showReconstructionDense) +
-    Number(showFullCode);
-  const stageLinks = [
-    { href: "#lesson-overview", label: "개요" },
-    { href: "#lesson-code", label: "원본 코드" },
-  ];
+  const items = [];
 
-  if (visibleBlockCards.length > 0) {
-    stageLinks.push({ href: "#step-blocks", label: "블록 해석" });
-  }
+  visibleBlockCards.forEach(({ block, index, progress: blockProgress }, blockOrder) => {
+    items.push({
+      key: `block-${index}`,
+      kind: "block",
+      navLabel: `블록 ${blockOrder + 1}`,
+      title: "블록 해석 객관식",
+      subtitle: block.label,
+      tag: "객관식",
+      note: "보이는 블록만 근거로 판단하는 문제입니다. 숨은 맥락보다 코드에 적힌 사실을 먼저 읽어 보세요.",
+      block,
+      blockIndex: index,
+      blockProgress,
+    });
+  });
 
   if (showOutput) {
-    stageLinks.push({ href: "#step-output", label: "출력 예측" });
+    items.push({
+      key: "output",
+      kind: "output",
+      navLabel: "출력 예측",
+      title: "실행 결과 예측",
+      subtitle: "샘플 입력 기준 출력 흐름",
+      tag: "결과값",
+      note: "샘플 입력을 기준으로 실제 출력이 어떻게 이어지는지 적어보세요.",
+    });
   }
 
-  if (showBlankChoice || showBlankText) {
-    stageLinks.push({ href: "#step-blanks", label: "핵심 빈칸" });
+  if (showBlankChoice) {
+    items.push({
+      key: "blank-choice",
+      kind: "blank-choice",
+      navLabel: "객관식 빈칸",
+      title: "핵심 코드 빈칸",
+      subtitle: "객관식으로 핵심 토큰 고르기",
+      tag: "객관식",
+      note: "원본 코드에서 학습 핵심이 되는 토큰만 비운 문제입니다.",
+    });
   }
 
-  if (showReconstructionLite || showReconstructionDense || showFullCode) {
-    stageLinks.push({ href: "#step-reconstruction", label: "코드 복원" });
+  if (showBlankText && blankTextUnlocked) {
+    items.push({
+      key: "blank-text",
+      kind: "blank-text",
+      navLabel: "주관식 빈칸",
+      title: "핵심 코드 빈칸",
+      subtitle: "주관식으로 직접 입력하기",
+      tag: "주관식",
+      note: "객관식에서 잡은 핵심 토큰을 이번에는 직접 입력해 보세요.",
+    });
   }
 
-  if (!reviewOnly) {
-    stageLinks.push({ href: "#lesson-summary", label: "총해설" });
+  if (showReconstructionLite && liteUnlocked) {
+    items.push({
+      key: "reconstruction-lite",
+      kind: "reconstruction-lite",
+      navLabel: "복원 1",
+      title: "코드 복원 주관식",
+      subtitle: "핵심 번호 빈칸 복원",
+      tag: "복원",
+      note: "전체 코드 안의 핵심 토큰 몇 개만 먼저 복원하는 단계입니다.",
+    });
+  }
+
+  if (showReconstructionDense && denseUnlocked) {
+    items.push({
+      key: "reconstruction-dense",
+      kind: "reconstruction-dense",
+      navLabel: "복원 2",
+      title: "코드 복원 주관식",
+      subtitle: "빈칸 확대 복원",
+      tag: "복원",
+      note: "더 많은 핵심 토큰을 직접 채워 넣어 코드 흐름을 이어 보세요.",
+    });
+  }
+
+  if (showFullCode && fullCodeUnlocked) {
+    items.push({
+      key: "full-code",
+      kind: "full-code",
+      navLabel: "전체 코드",
+      title: "코드 복원 주관식",
+      subtitle: "전체 코드 직접 입력",
+      tag: "심화",
+      note: "마지막 단계입니다. 전체 코드를 직접 입력해 흐름을 복원해 보세요.",
+    });
+  }
+
+  const currentIndex = getClampedProblemStep(state, example.id, items.length);
+
+  return {
+    progress,
+    lessonStatus,
+    reviewOnly,
+    items,
+    currentIndex,
+    currentItem: items[currentIndex] || null,
+  };
+}
+
+function renderProblemStageStrip(items, currentIndex) {
+  if (items.length === 0) {
+    return "";
+  }
+
+  const currentItem = items[currentIndex];
+
+  return `
+    <section class="problem-stage-strip" aria-label="문제 흐름">
+      <div class="problem-stage-summary">
+        <span class="problem-stage-counter">문제 ${currentIndex + 1} / ${items.length}</span>
+        <strong>${escapeHtml(currentItem.title)}</strong>
+        <small>${escapeHtml(currentItem.subtitle || currentItem.navLabel)}</small>
+      </div>
+      <div class="problem-stage-track">
+        ${items
+          .map(
+            (item, index) => `
+              <button
+                class="problem-stage-chip ${index === currentIndex ? "is-active" : ""}"
+                data-action="jump-problem"
+                data-problem-index="${index}"
+              >
+                <span>${index + 1}</span>
+                <small>${escapeHtml(item.navLabel)}</small>
+              </button>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderQuestionFooter(currentIndex, total) {
+  return `
+    <div class="problem-question-footer">
+      <a class="btn btn-secondary" href="#lesson-code">원본 코드</a>
+      <div class="button-row">
+        <button class="btn btn-secondary" data-action="prev-problem" ${currentIndex === 0 ? "disabled" : ""}>이전 문제</button>
+        <button class="btn btn-primary" data-action="next-problem" ${currentIndex >= total - 1 ? "disabled" : ""}>다음 문제</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderCurrentQuestion(state, example, source, flow) {
+  const { progress, items, currentIndex, currentItem } = flow;
+
+  if (!currentItem) {
+    return `
+      <section class="problem-question-panel">
+        <div class="feedback correct">이 예제에서 현재 풀어야 할 문항이 없습니다. 왼쪽에서 다른 코드를 고르거나 필터를 바꿔 보세요.</div>
+      </section>
+    `;
+  }
+
+  let content = "";
+
+  if (currentItem.kind === "block") {
+    content = `
+      <div class="quiz-block">
+        <h4>${escapeHtml(currentItem.subtitle)}</h4>
+        <pre class="snippet">${escapeHtml(currentItem.block.snippet)}</pre>
+        <p class="meta-copy">${escapeHtml(currentItem.block.question)}</p>
+        ${renderQuizOptions(`block-${currentItem.blockIndex}`, currentItem.block.options, currentItem.blockProgress.selected)}
+        <div class="button-row">
+          <button class="btn btn-primary" data-action="check-block" data-block-index="${currentItem.blockIndex}">채점하기</button>
+        </div>
+        ${renderBlockFeedback(currentItem.blockProgress, currentItem.block)}
+      </div>
+    `;
+  }
+
+  if (currentItem.kind === "output") {
+    content = `
+      <div class="quiz-block">
+        <h4>${escapeHtml(currentItem.subtitle)}</h4>
+        <pre class="sample-input">${escapeHtml(example.output.sampleInput)}</pre>
+        <p class="meta-copy">${escapeHtml(example.output.hint)}</p>
+        <textarea class="answer-input" id="output-answer" placeholder="예상 출력값을 여기에 입력하세요.">${escapeHtml(progress.outputAnswer)}</textarea>
+        <div class="button-row">
+          <button class="btn btn-primary" data-action="check-output">출력 비교</button>
+          <button class="btn btn-secondary" data-action="reveal-output">정답 보기</button>
+        </div>
+        ${renderOutputFeedback(example, progress)}
+      </div>
+    `;
+  }
+
+  if (currentItem.kind === "blank-choice") {
+    content = `
+      <div class="quiz-block">
+        <h4>${escapeHtml(currentItem.subtitle)}</h4>
+        <pre class="snippet">${escapeHtml(example.fillBlankChoice.snippet)}</pre>
+        <p class="meta-copy">${escapeHtml(example.fillBlankChoice.prompt)}</p>
+        ${renderQuizOptions("blank-choice", example.fillBlankChoice.options, progress.blankChoiceAnswer)}
+        <div class="button-row">
+          <button class="btn btn-primary" data-action="check-blank-choice">채점하기</button>
+        </div>
+        ${renderChoiceFeedback(example, progress)}
+      </div>
+    `;
+  }
+
+  if (currentItem.kind === "blank-text") {
+    content = `
+      <div class="quiz-block">
+        <h4>${escapeHtml(currentItem.subtitle)}</h4>
+        <pre class="snippet">${escapeHtml(example.fillBlankText.snippet)}</pre>
+        <p class="meta-copy">${escapeHtml(example.fillBlankText.prompt)}</p>
+        <input class="text-input" id="blank-text-answer" value="${escapeHtml(progress.blankTextAnswer)}" placeholder="정답을 직접 입력하세요." />
+        <div class="button-row">
+          <button class="btn btn-primary" data-action="check-blank-text">채점하기</button>
+        </div>
+        ${renderTextFeedback(example, progress)}
+      </div>
+    `;
+  }
+
+  if (currentItem.kind === "reconstruction-lite") {
+    const reconstruction = getReconstructionData(state, example, source);
+
+    content = `
+      <div class="quiz-block">
+        <h4>${escapeHtml(currentItem.subtitle)}</h4>
+        <pre class="snippet">${escapeHtml(reconstruction.lite.masked)}</pre>
+        <p class="meta-copy">전체 코드 안의 핵심 토큰 몇 개만 먼저 복원해 보세요.</p>
+        ${renderReconstructionInputs("reconstruction-lite", reconstruction.lite.answers, progress.reconstructionLiteAnswers)}
+        <div class="button-row">
+          <button class="btn btn-primary" data-action="check-reconstruction-lite">채점하기</button>
+        </div>
+        ${renderReconstructionFeedback(
+          progress,
+          "reconstructionLiteChecked",
+          "핵심 토큰 위치를 잘 잡았어요.",
+          reconstruction.lite.answers
+        )}
+      </div>
+    `;
+  }
+
+  if (currentItem.kind === "reconstruction-dense") {
+    const reconstruction = getReconstructionData(state, example, source);
+
+    content = `
+      <div class="quiz-block">
+        <h4>${escapeHtml(currentItem.subtitle)}</h4>
+        <pre class="snippet">${escapeHtml(reconstruction.dense.masked)}</pre>
+        <p class="meta-copy">이번에는 더 많은 핵심 토큰을 직접 채워 넣어 코드 흐름을 이어 보세요.</p>
+        ${renderReconstructionInputs("reconstruction-dense", reconstruction.dense.answers, progress.reconstructionDenseAnswers)}
+        <div class="button-row">
+          <button class="btn btn-primary" data-action="check-reconstruction-dense">채점하기</button>
+        </div>
+        ${renderReconstructionFeedback(
+          progress,
+          "reconstructionDenseChecked",
+          "더 넓은 코드 흐름을 잘 복원했어요.",
+          reconstruction.dense.answers
+        )}
+      </div>
+    `;
+  }
+
+  if (currentItem.kind === "full-code") {
+    content = `
+      <div class="quiz-block">
+        <h4>${escapeHtml(currentItem.subtitle)}</h4>
+        <p class="meta-copy">공백, 줄바꿈, 주석은 자유롭게 두고 전체 코드를 직접 입력해 보세요.</p>
+        <textarea class="answer-input" id="full-code-answer" placeholder="전체 코드를 직접 입력하세요.">${escapeHtml(progress.fullCodeAnswer)}</textarea>
+        <div class="button-row">
+          <button class="btn btn-primary" data-action="check-full-code">전체 코드 비교</button>
+        </div>
+        ${renderFullCodeFeedback(progress)}
+      </div>
+    `;
   }
 
   return `
-    <section class="lesson-hero" id="lesson-overview">
-      <div class="pill-row">
-        <span class="pill">${escapeHtml(example.file)}</span>
-        <span class="pill">${escapeHtml(example.theme)}</span>
-        <span class="pill">총 ${lessonStatus.total}문항</span>
-        ${reviewOnly ? '<span class="pill pill-warm">오답 반복 모드</span>' : ""}
-      </div>
-      <div>
-        <h2>${escapeHtml(example.title)}</h2>
-        <p class="meta-copy">${escapeHtml(example.intent)}</p>
-      </div>
-      <div class="two-col">
-        <div class="info-box">
-          <h3>이 코드의 목적</h3>
-          <p>${escapeHtml(example.goal)}</p>
+    <section class="problem-question-panel">
+      <div class="problem-question-head">
+        <div>
+          <p class="problem-question-counter">문제 ${currentIndex + 1} / ${items.length}</p>
+          <h3>${escapeHtml(currentItem.title)}</h3>
+          <p class="quiz-note">${escapeHtml(currentItem.note)}</p>
         </div>
-        <div class="info-box">
-          <h3>현재 상태</h3>
-          <p>맞힘 ${lessonStatus.correct}/${lessonStatus.total}, 오답 ${lessonStatus.wrong}문항입니다. ${reviewOnly ? "지금은 틀린 문항만 보여 주고 있습니다." : "전체 단계를 순서대로 풀 수 있습니다."}</p>
+        <span class="step-tag">${escapeHtml(currentItem.tag)}</span>
+      </div>
+      ${content}
+      ${renderQuestionFooter(currentIndex, items.length)}
+    </section>
+  `;
+}
+
+function renderLessonBody(state, example, source) {
+  const flow = getLessonProblemFlow(state, example);
+  const { lessonStatus, reviewOnly, items, currentIndex } = flow;
+
+  return `
+    <section class="problem-lesson-overview" id="lesson-overview">
+      <div class="problem-lesson-copy">
+        <div class="pill-row">
+          <span class="pill">${escapeHtml(example.file)}</span>
+          <span class="pill">${escapeHtml(example.theme)}</span>
+          <span class="pill">총 ${lessonStatus.total}문항</span>
+          ${reviewOnly ? '<span class="pill pill-warm">오답 반복 모드</span>' : ""}
+        </div>
+        <h2>${escapeHtml(example.title)}</h2>
+        <p class="meta-copy">${escapeHtml(example.goal)}</p>
+      </div>
+      <div class="problem-lesson-summary">
+        <div class="problem-lesson-row">
+          <span>현재 코드 진도</span>
+          <strong>${lessonStatus.correct}/${lessonStatus.total}</strong>
+        </div>
+        <div class="problem-lesson-row">
+          <span>현재 코드 오답</span>
+          <strong>${lessonStatus.wrong}문항</strong>
+        </div>
+        <div class="problem-lesson-row">
+          <span>보이는 문제</span>
+          <strong>${items.length}개</strong>
+        </div>
+        <div class="problem-lesson-row">
+          <span>현재 순서</span>
+          <strong>${items.length > 0 ? `${currentIndex + 1}/${items.length}` : "완료"}</strong>
         </div>
       </div>
     </section>
-
-    ${renderStageNav(stageLinks)}
 
     <details class="code-section code-details" id="lesson-code">
       <summary class="code-summary">
@@ -601,262 +887,47 @@ function renderLessonBody(state, example, source) {
       </div>
     </details>
 
-    <section class="step-list">
-      ${
-        visibleQuestionCount === 0
-          ? `
-            <article class="step-card">
-              <div class="feedback correct">이 예제에서는 현재 오답 문항이 없습니다. 다른 코드로 넘어가거나 전체 모드로 돌아가 보세요.</div>
-            </article>
-          `
-          : ""
-      }
+    ${renderProblemStageStrip(items, currentIndex)}
+    ${renderCurrentQuestion(state, example, source, flow)}
 
-      ${
-        visibleBlockCards.length > 0
-          ? `
-            <article class="step-card" id="step-blocks">
-              <div class="step-head">
-                <div>
-                  <h3>1. 블록 해석 객관식</h3>
-                  <p class="quiz-note">보이는 블록만 근거로 판단하는 문제입니다. 숨은 맥락 추측보다 코드에 적힌 사실을 먼저 읽어 보세요.</p>
-                </div>
-                <span class="step-tag">객관식</span>
-              </div>
-              ${visibleBlockCards
-                .map(
-                  ({ block, index, progress: blockProgress }) => `
-                    <div class="quiz-block">
-                      <h4>${escapeHtml(block.label)}</h4>
-                      <pre class="snippet">${escapeHtml(block.snippet)}</pre>
-                      <p class="meta-copy">${escapeHtml(block.question)}</p>
-                      ${renderQuizOptions(`block-${index}`, block.options, blockProgress.selected)}
-                      <div class="button-row">
-                        <button class="btn btn-primary" data-action="check-block" data-block-index="${index}">채점하기</button>
-                      </div>
-                      ${renderBlockFeedback(blockProgress, block)}
-                    </div>
-                  `
-                )
-                .join("")}
-            </article>
-          `
-          : ""
-      }
-
-      ${
-        showOutput
-          ? `
-            <article class="step-card" id="step-output">
-              <div class="step-head">
-                <div>
-                  <h3>2. 실행 결과 예측</h3>
-                  <p class="quiz-note">샘플 입력 기준으로 실제 출력이 어떻게 이어지는지 적어보세요.</p>
-                </div>
-                <span class="step-tag">결과값</span>
-              </div>
-              <div class="quiz-block">
-                <h4>샘플 입력</h4>
-                <pre class="sample-input">${escapeHtml(example.output.sampleInput)}</pre>
-                <p class="meta-copy">${escapeHtml(example.output.hint)}</p>
-                <textarea class="answer-input" id="output-answer" placeholder="예상 출력값을 여기에 입력하세요.">${escapeHtml(progress.outputAnswer)}</textarea>
-                <div class="button-row">
-                  <button class="btn btn-primary" data-action="check-output">출력 비교</button>
-                  <button class="btn btn-secondary" data-action="reveal-output">정답 보기</button>
-                </div>
-                ${renderOutputFeedback(example, progress)}
-              </div>
-            </article>
-          `
-          : ""
-      }
-
-      ${
-        showBlankChoice || showBlankText
-          ? `
-            <article class="step-card" id="step-blanks">
-              <div class="step-head">
-                <div>
-                  <h3>3. 핵심 코드 빈칸</h3>
-                  <p class="quiz-note">원본 코드에서 학습 핵심이 되는 토큰만 비운 문제입니다. 먼저 객관식으로 잡고, 맞히면 아래 주관식을 풉니다.</p>
-                </div>
-                <span class="step-tag">객관식 → 주관식</span>
-              </div>
-
-              ${
-                showBlankChoice
-                  ? `
-                    <div class="quiz-block">
-                      <h4>3-1. 객관식 빈칸</h4>
-                      <pre class="snippet">${escapeHtml(example.fillBlankChoice.snippet)}</pre>
-                      <p class="meta-copy">${escapeHtml(example.fillBlankChoice.prompt)}</p>
-                      ${renderQuizOptions("blank-choice", example.fillBlankChoice.options, progress.blankChoiceAnswer)}
-                      <div class="button-row">
-                        <button class="btn btn-primary" data-action="check-blank-choice">채점하기</button>
-                      </div>
-                      ${renderChoiceFeedback(example, progress)}
-                    </div>
-                  `
-                  : ""
-              }
-
-              ${
-                showBlankText
-                  ? `
-                    <div class="quiz-block ${blankTextUnlocked ? "" : "locked"}">
-                      <h4>3-2. 주관식 빈칸</h4>
-                      <pre class="snippet">${escapeHtml(example.fillBlankText.snippet)}</pre>
-                      ${
-                        blankTextUnlocked
-                          ? `<p class="meta-copy">${escapeHtml(example.fillBlankText.prompt)}</p>
-                             <input class="text-input" id="blank-text-answer" value="${escapeHtml(progress.blankTextAnswer)}" placeholder="정답을 직접 입력하세요." />
-                             <div class="button-row">
-                               <button class="btn btn-primary" data-action="check-blank-text">채점하기</button>
-                             </div>
-                             ${renderTextFeedback(example, progress)}`
-                          : renderLockedMessage("위 객관식 빈칸을 먼저 맞히면 이 칸이 열립니다.")
-                      }
-                    </div>
-                  `
-                  : ""
-              }
-            </article>
-          `
-          : ""
-      }
-
-      ${
-        showReconstructionLite || showReconstructionDense || showFullCode
-          ? `
-            <article class="step-card" id="step-reconstruction">
-              <div class="step-head">
-                <div>
-                  <h3>4. 코드 복원 주관식</h3>
-                  <p class="quiz-note">전체 코드를 보면서 번호 빈칸을 채우고, 점점 더 많은 부분을 복원한 뒤 마지막에는 전체 코드를 직접 입력합니다.</p>
-                </div>
-                <span class="step-tag">주관식 심화</span>
-              </div>
-
-              ${
-                showReconstructionLite
-                  ? `
-                    <div class="quiz-block ${liteUnlocked ? "" : "locked"}">
-                      <h4>4-1. 핵심 번호 빈칸</h4>
-                      <pre class="snippet">${escapeHtml(reconstruction.lite.masked)}</pre>
-                      ${
-                        liteUnlocked
-                          ? `
-                              <p class="meta-copy">전체 코드 안의 핵심 토큰 몇 개만 먼저 복원해 보세요.</p>
-                              ${renderReconstructionInputs("reconstruction-lite", reconstruction.lite.answers, progress.reconstructionLiteAnswers)}
-                              <div class="button-row">
-                                <button class="btn btn-primary" data-action="check-reconstruction-lite">채점하기</button>
-                              </div>
-                              ${renderReconstructionFeedback(
-                                progress,
-                                "reconstructionLiteChecked",
-                                "핵심 토큰 위치를 잘 잡았어요.",
-                                reconstruction.lite.answers
-                              )}
-                            `
-                          : renderLockedMessage("위 주관식 빈칸을 먼저 맞히면 첫 번째 복원 문제가 열립니다.")
-                      }
-                    </div>
-                  `
-                  : ""
-              }
-
-              ${
-                showReconstructionDense
-                  ? `
-                    <div class="quiz-block ${denseUnlocked ? "" : "locked"}">
-                      <h4>4-2. 빈칸 확대 복원</h4>
-                      <pre class="snippet">${escapeHtml(reconstruction.dense.masked)}</pre>
-                      ${
-                        denseUnlocked
-                          ? `
-                              <p class="meta-copy">이번에는 더 많은 핵심 토큰을 직접 채워 넣어 코드 흐름을 이어 보세요.</p>
-                              ${renderReconstructionInputs("reconstruction-dense", reconstruction.dense.answers, progress.reconstructionDenseAnswers)}
-                              <div class="button-row">
-                                <button class="btn btn-primary" data-action="check-reconstruction-dense">채점하기</button>
-                              </div>
-                              ${renderReconstructionFeedback(
-                                progress,
-                                "reconstructionDenseChecked",
-                                "더 넓은 코드 흐름을 잘 복원했어요.",
-                                reconstruction.dense.answers
-                              )}
-                            `
-                          : renderLockedMessage("앞 단계의 핵심 번호 빈칸을 맞히면 더 큰 복원 문제가 열립니다.")
-                      }
-                    </div>
-                  `
-                  : ""
-              }
-
-              ${
-                showFullCode
-                  ? `
-                    <div class="quiz-block ${fullCodeUnlocked ? "" : "locked"}">
-                      <h4>4-3. 전체 코드 직접 입력</h4>
-                      ${
-                        fullCodeUnlocked
-                          ? `
-                              <p class="meta-copy">마지막 단계입니다. 공백, 줄바꿈, 주석은 자유롭게 두고 전체 코드를 직접 입력해 보세요.</p>
-                              <textarea class="answer-input" id="full-code-answer" placeholder="전체 코드를 직접 입력하세요.">${escapeHtml(progress.fullCodeAnswer)}</textarea>
-                              <div class="button-row">
-                                <button class="btn btn-primary" data-action="check-full-code">전체 코드 비교</button>
-                              </div>
-                              ${renderFullCodeFeedback(progress)}
-                            `
-                          : renderLockedMessage("빈칸 확대 복원을 맞히면 마지막 전체 코드 입력 단계가 열립니다.")
-                      }
-                    </div>
-                  `
-                  : ""
-              }
-            </article>
-          `
-          : ""
-      }
-
-      ${
-        !reviewOnly
-          ? `
-            <article class="summary-card" id="lesson-summary">
-              <h3>총해설</h3>
+    ${
+      !reviewOnly
+        ? `
+          <details class="code-section problem-summary-details" id="lesson-summary">
+            <summary class="code-summary">
+              <span>총해설</span>
+              <span class="code-summary-hint">필요할 때만 펼쳐서 확인하세요.</span>
+            </summary>
+            <div class="code-section-body">
               <ul class="summary-list">
                 ${example.summary.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
               </ul>
-            </article>
-          `
-          : ""
-      }
-    </section>
-
-    ${renderLessonFooterNav(state, example)}
+            </div>
+          </details>
+        `
+        : ""
+    }
   `;
 }
 
 export function renderLessonLoading(state, example) {
   return `
-    ${renderLessonTopNav(state, example)}
-    <div class="detail-layout">
+    <div class="problem-shell-grid">
       ${renderProblemSidebar(state)}
-      <div class="card">
+      <section class="problem-workbench progress-board">
         <p class="meta-copy">예제를 불러오는 중입니다...</p>
-      </div>
+      </section>
     </div>
   `;
 }
 
 export function renderLessonReady(state, example, source) {
   return `
-    ${renderLessonTopNav(state, example)}
-    <div class="detail-layout">
+    <div class="problem-shell-grid">
       ${renderProblemSidebar(state)}
-      <div class="card">
+      <section class="problem-workbench progress-board">
         ${renderLessonBody(state, example, source)}
-      </div>
+      </section>
     </div>
   `;
 }
@@ -866,6 +937,12 @@ function getInputValues(prefix, count) {
     const input = document.querySelector(`#${prefix}-input-${index}`);
     return input?.value ?? "";
   });
+}
+
+function getInputValuesFromDom(prefix) {
+  return Array.from(document.querySelectorAll(`[id^="${prefix}-input-"]`)).map(
+    (input) => input.value ?? ""
+  );
 }
 
 function checkTokenArrayAnswers(userAnswers, expectedAnswers) {
@@ -921,6 +998,62 @@ export function handleLessonChange(event, { state, rerender }) {
   return true;
 }
 
+function captureCurrentQuestionDraft(state, example) {
+  const flow = getLessonProblemFlow(state, example);
+  const item = flow.currentItem;
+
+  if (!item) {
+    return;
+  }
+
+  const progress = ensureProgress(state, example.id);
+
+  if (item.kind === "block") {
+    const selected = document.querySelector(`input[name="block-${item.blockIndex}"]:checked`);
+
+    if (selected) {
+      progress.blocks[item.blockIndex] = {
+        ...(progress.blocks[item.blockIndex] || {}),
+        selected: Number(selected.value),
+      };
+    }
+
+    return;
+  }
+
+  if (item.kind === "output") {
+    progress.outputAnswer = document.querySelector("#output-answer")?.value ?? progress.outputAnswer;
+    return;
+  }
+
+  if (item.kind === "blank-choice") {
+    const selected = document.querySelector('input[name="blank-choice"]:checked');
+    progress.blankChoiceAnswer = selected ? Number(selected.value) : progress.blankChoiceAnswer;
+    return;
+  }
+
+  if (item.kind === "blank-text") {
+    progress.blankTextAnswer =
+      document.querySelector("#blank-text-answer")?.value ?? progress.blankTextAnswer;
+    return;
+  }
+
+  if (item.kind === "reconstruction-lite") {
+    progress.reconstructionLiteAnswers = getInputValuesFromDom("reconstruction-lite");
+    return;
+  }
+
+  if (item.kind === "reconstruction-dense") {
+    progress.reconstructionDenseAnswers = getInputValuesFromDom("reconstruction-dense");
+    return;
+  }
+
+  if (item.kind === "full-code") {
+    progress.fullCodeAnswer =
+      document.querySelector("#full-code-answer")?.value ?? progress.fullCodeAnswer;
+  }
+}
+
 export async function handleLessonClick(event, { state, rerender, navigateToLesson }) {
   const codeStageLink = event.target.closest('.stage-link[href="#lesson-code"]');
 
@@ -937,6 +1070,7 @@ export async function handleLessonClick(event, { state, rerender, navigateToLess
   const action = actionButton.dataset.action;
 
   if (action === "select-lesson") {
+    captureCurrentQuestionDraft(state, getExampleById(state.selectedId));
     const lessonId = actionButton.dataset.lessonId;
     if (lessonId) {
       state.selectedId = lessonId;
@@ -947,6 +1081,7 @@ export async function handleLessonClick(event, { state, rerender, navigateToLess
   }
 
   if (action === "set-filter") {
+    captureCurrentQuestionDraft(state, getExampleById(state.selectedId));
     const filter = actionButton.dataset.filter;
 
     if (REVIEW_FILTERS.includes(filter)) {
@@ -963,6 +1098,22 @@ export async function handleLessonClick(event, { state, rerender, navigateToLess
 
   const example = getExampleById(state.selectedId);
   const progress = ensureProgress(state, example.id);
+
+  if (action === "prev-problem" || action === "next-problem" || action === "jump-problem") {
+    captureCurrentQuestionDraft(state, example);
+
+    const flow = getLessonProblemFlow(state, example);
+    const nextIndex =
+      action === "prev-problem"
+        ? flow.currentIndex - 1
+        : action === "next-problem"
+          ? flow.currentIndex + 1
+          : Number(actionButton.dataset.problemIndex);
+
+    setStoredProblemStep(state, example.id, nextIndex);
+    rerender();
+    return true;
+  }
 
   if (action === "reset-current") {
     if (!window.confirm(`${example.file} 진행 상황을 초기화할까요?`)) {

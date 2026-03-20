@@ -3288,6 +3288,267 @@ body.feature-body .progress-empty {
   line-height: 1.7;
 }
 
+body.feature-body .problem-dashboard {
+  display: grid;
+  gap: 18px;
+}
+
+body.feature-body .problem-shell-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+body.feature-body .problems-page .problem-sidebar {
+  top: 98px;
+  gap: 16px;
+  padding: 20px;
+}
+
+body.feature-body .problems-page .control-panel {
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+body.feature-body .problems-page .problem-nav-shell,
+body.feature-body .problems-page .problem-nav-list {
+  gap: 0;
+}
+
+body.feature-body .problems-page .problem-nav-card {
+  gap: 10px;
+  padding: 14px 0;
+  border: 0;
+  border-top: 1px solid rgba(95, 76, 201, 0.1);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+body.feature-body .problems-page .problem-nav-card:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+body.feature-body .problems-page .problem-nav-card-active {
+  margin: 0 -10px;
+  padding: 14px 10px;
+  border-top-color: transparent;
+  border-radius: 18px;
+  background: linear-gradient(90deg, rgba(116, 67, 240, 0.11), rgba(255, 255, 255, 0.84));
+}
+
+body.feature-body .problems-page .problem-nav-button {
+  gap: 8px;
+}
+
+body.feature-body .problem-workbench {
+  display: grid;
+  gap: 18px;
+}
+
+body.feature-body .problem-lesson-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.86fr);
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(95, 76, 201, 0.1);
+}
+
+body.feature-body .problem-lesson-copy {
+  display: grid;
+  gap: 12px;
+}
+
+body.feature-body .problem-lesson-copy h2 {
+  margin: 0;
+  font-size: clamp(1.9rem, 3vw, 2.5rem);
+}
+
+body.feature-body .problem-lesson-summary {
+  display: grid;
+  gap: 0;
+  padding-left: 18px;
+  border-left: 1px solid rgba(95, 76, 201, 0.1);
+}
+
+body.feature-body .problem-lesson-row {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(95, 76, 201, 0.1);
+}
+
+body.feature-body .problem-lesson-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+body.feature-body .problem-lesson-row span,
+body.feature-body .problem-stage-summary small,
+body.feature-body .problem-stage-chip small,
+body.feature-body .problem-question-counter {
+  color: var(--muted);
+}
+
+body.feature-body .problem-lesson-row strong {
+  font-size: 1.05rem;
+}
+
+body.feature-body .problem-stage-strip {
+  display: grid;
+  gap: 12px;
+}
+
+body.feature-body .problem-stage-summary {
+  display: grid;
+  gap: 4px;
+}
+
+body.feature-body .problem-stage-counter {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body.feature-body .problem-stage-track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+body.feature-body .problem-stage-chip {
+  display: grid;
+  gap: 4px;
+  min-width: 92px;
+  padding: 10px 12px;
+  border: 1px solid rgba(95, 76, 201, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+
+body.feature-body .problem-stage-chip span {
+  font-weight: 700;
+}
+
+body.feature-body .problem-stage-chip.is-active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(90deg, #ca37f5 0%, #7443f0 55%, #5f3be7 100%);
+  box-shadow: 0 14px 28px rgba(95, 59, 231, 0.18);
+}
+
+body.feature-body .problem-stage-chip.is-active small {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+body.feature-body .problem-question-panel {
+  display: grid;
+  gap: 16px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(95, 76, 201, 0.1);
+}
+
+body.feature-body .problem-question-head,
+body.feature-body .problem-question-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+body.feature-body .problem-question-head h3 {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+}
+
+body.feature-body .problem-question-counter {
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body.feature-body .problem-question-footer {
+  padding-top: 4px;
+  border-top: 1px dashed rgba(95, 76, 201, 0.16);
+}
+
+body.feature-body .problem-summary-details {
+  margin-top: 0;
+}
+
+@media (max-width: 1080px) {
+  body.feature-body .problem-shell-grid,
+  body.feature-body .problem-lesson-overview {
+    grid-template-columns: 1fr;
+  }
+
+  body.feature-body .problem-workbench {
+    order: 1;
+  }
+
+  body.feature-body .problems-page .problem-sidebar {
+    order: 2;
+  }
+
+  body.feature-body .problem-lesson-summary {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid rgba(95, 76, 201, 0.1);
+    padding-top: 12px;
+  }
+
+  body.feature-body .problems-page .problem-sidebar {
+    position: static;
+    top: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  body.feature-body .problem-shell-grid {
+    gap: 16px;
+  }
+
+  body.feature-body .problems-page .problem-sidebar,
+  body.feature-body .problem-workbench {
+    padding: 16px;
+  }
+
+  body.feature-body .problems-page .problem-nav-card-active {
+    margin: 0 -8px;
+    padding: 12px 8px;
+  }
+
+  body.feature-body .problem-stage-chip {
+    min-width: 82px;
+    padding: 9px 10px;
+  }
+
+  body.feature-body .problem-question-head,
+  body.feature-body .problem-question-footer {
+    flex-direction: column;
+  }
+
+  body.feature-body .problem-question-footer .button-row {
+    width: 100%;
+  }
+
+  body.feature-body .problem-question-footer .btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 body.feature-body .progress-bar {
   background: rgba(65, 53, 119, 0.08);
 }
