@@ -137,7 +137,7 @@ function renderLandingPage() {
           <div class="landing-hero-copy">
             <p class="landing-kicker">C Data Structure Study Hub</p>
             <h1 class="landing-headline">
-              문제를 <span class="landing-headline-accent">기능별로 나눈</span> 학습 허브
+              <span class="landing-headline-accent">기능별</span> 학습 허브
             </h1>
             <p class="landing-subcopy">
               소개, 성취도, 학습 진행도, 문제, 오답노트를 각각 분리해 두었습니다.
