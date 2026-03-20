@@ -16,7 +16,7 @@ import {
   openCodeSection,
   renderLessonLoading,
   renderLessonReady,
-} from "../core/lesson.js?v=20260320e";
+} from "../core/lesson.js?v=20260321a";
 
 const app = document.querySelector("#app");
 const state = createAppState();

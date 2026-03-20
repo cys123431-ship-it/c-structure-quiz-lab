@@ -1165,12 +1165,28 @@ export async function handleLessonClick(event, { state, rerender, navigateToLess
   if (action === "problem-nav-prev-page" || action === "problem-nav-next-page") {
     captureCurrentQuestionDraft(state, getExampleById(state.selectedId));
     const visibleExamples = getVisibleExamples(state);
+
+    if (visibleExamples.length === 0) {
+      state.problemNavPage = 0;
+      rerender();
+      return true;
+    }
+
     const totalPages = Math.max(1, Math.ceil(visibleExamples.length / PROBLEM_NAV_PAGE_SIZE));
     ensureProblemNavPageState(state, visibleExamples);
-    state.problemNavPage =
+    const nextPage =
       action === "problem-nav-prev-page"
         ? Math.max(0, state.problemNavPage - 1)
         : Math.min(totalPages - 1, state.problemNavPage + 1);
+    state.problemNavPage = nextPage;
+
+    const nextLesson = visibleExamples[nextPage * PROBLEM_NAV_PAGE_SIZE] ?? visibleExamples[0];
+
+    if (nextLesson) {
+      state.selectedId = nextLesson.id;
+      navigateToLesson(nextLesson.id);
+    }
+
     rerender();
     return true;
   }
