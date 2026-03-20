@@ -137,7 +137,7 @@ function renderPage() {
       ${renderSiteNav("review")}
       <header class="hero-copy hero-copy-wide">
         <p class="eyebrow">Wrong Answer Notebook</p>
-        <h1>틀린 문제만 추려서<br />바로 다시 풀 수 있는 오답노트</h1>
+        <h1>오답노트</h1>
         <p class="hero-text">
           복습이 필요한 예제만 빠르게 모아서 보여 주기 때문에, 다시 볼 대상을 찾느라 헤매지 않아도 됩니다.
           남은 오답 수를 먼저 확인하고, 필요한 예제만 골라 review 모드로 바로 이어서 풀어 보세요.

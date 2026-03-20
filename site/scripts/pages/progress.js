@@ -147,7 +147,7 @@ function renderHero() {
     <section class="page-hero">
       <div class="hero-panel hero-panel-copy">
         <p class="eyebrow">Progress</p>
-        <h1>지금 어디까지 풀었는지 바로 확인합니다.</h1>
+        <h1>학습 진행도</h1>
         <p class="hero-note">
           이 페이지는 예제별 진도, 선택 여부, 남은 오답을 한 번에 보는 화면입니다.
           아래 필터로 필요한 묶음만 추려 보고, 바로 다음 문제로 이어서 들어가면 됩니다.

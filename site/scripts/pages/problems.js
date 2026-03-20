@@ -55,7 +55,7 @@ function renderPageShell(body) {
       <section class="hero hero-page">
         <div class="hero-copy hero-copy-wide">
           <p class="eyebrow">Problems</p>
-          <h1>선택한 코드로 바로 문제를 풉니다.</h1>
+          <h1>문제</h1>
           <p class="hero-text">
             왼쪽에서 예제를 고르면 오른쪽에서 블록 해석, 출력, 빈칸, 복원 문제를 같은 흐름으로 바로 이어서 풉니다.
             현재 보고 있는 코드와 전체 진도를 같이 확인하면서 다음 예제로 넘어가세요.
