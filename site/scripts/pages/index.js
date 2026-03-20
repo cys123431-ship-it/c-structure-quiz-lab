@@ -1,5 +1,4 @@
-import { createAppState, getGlobalStats, isValidExampleId } from "../core/store.js";
-import { renderHeroCard, renderHeroStatsCard, renderSiteNav } from "../core/shell.js";
+import { createAppState, getExampleById, getGlobalStats, isValidExampleId } from "../core/store.js";
 
 const app = document.querySelector("#app");
 const appState = createAppState();
@@ -37,69 +36,178 @@ function redirectLegacyLessonIfNeeded() {
   return true;
 }
 
-function renderLandingPage() {
-  document.title = "C 자료구조 블록 퀴즈 | 학습 허브";
-
-  const stats = getGlobalStats(appState);
-  const primaryPages = [
-    { href: "./achievements.html", label: "내 성취도 페이지 바로가기" },
-    { href: "./progress.html", label: "학습 진행도 페이지 바로가기" },
-    { href: "./problems.html", label: "문제 페이지 바로가기" },
-    { href: "./review.html", label: "오답노트 바로가기" },
+function renderTopNav(currentLessonHref) {
+  const navLinks = [
+    { href: "./achievements.html", label: "성취도" },
+    { href: "./progress.html", label: "학습 센터" },
+    { href: "./problems.html", label: "문제 페이지" },
+    { href: "./review.html", label: "오답노트" },
   ];
 
-  app.innerHTML = `
-    <div class="page-shell">
-      <section class="page-hero">
-        <div class="hero-panel hero-panel-copy">
-          ${renderSiteNav("home")}
-          ${renderHeroCard({
-            eyebrow: "C Study Lab",
-            title: "페이지를 나눠서 더 쉽게 공부하는 C 자료구조 허브",
-            description:
-              "처음 방문하면 소개와 기능 네비게이터가 보이고, 원하는 기능은 각자 독립된 페이지에서 이어서 공부할 수 있습니다. 이전에 쓰던 문제 링크는 자동으로 문제 페이지로 보내서 그대로 이어집니다.",
-            actions: primaryPages
-              .map(
-                (page) => `
-                  <a class="btn btn-secondary" href="${page.href}">
-                    ${page.label}
-                  </a>
-                `
-              )
-              .join(""),
-          })}
-        </div>
-        ${renderHeroStatsCard({
-          eyebrow: "Shared Progress",
-          description: "어느 페이지에서 풀어도 같은 진도와 오답 기록을 이어서 확인할 수 있습니다.",
-          items: [
-            { label: "예제 수", value: String(stats.lessonCount) },
-            { label: "완료한 예제", value: String(stats.completedLessons) },
-            { label: "정답", value: `${stats.solvedItems}/${stats.totalItems}` },
-            { label: "오답", value: String(stats.wrongItems) },
-            { label: "선택한 예제", value: String(stats.selectedLessons) },
-          ],
-        })}
-      </section>
+  return `
+    <header class="landing-nav">
+      <a class="landing-brand" href="./index.html">
+        <span class="landing-brand-mark">DS</span>
+        <span class="landing-brand-copy">
+          <strong>C 자료구조 블록 퀴즈</strong>
+          <span>기능별 학습 허브</span>
+        </span>
+      </a>
 
-      <section class="feature-nav-panel">
-        <div class="section-heading">
-          <h2>기능 네비게이터</h2>
-          <p>학습 흐름에 맞춰 원하는 페이지로 바로 이동하세요.</p>
-        </div>
-        <div class="feature-nav-grid">
-          ${primaryPages
-            .map(
-              (page) => `
-                <a class="feature-nav-card" href="${page.href}">
-                  <span class="feature-nav-label">${page.label}</span>
-                  <span class="feature-nav-arrow">바로가기</span>
-                </a>
-              `
-            )
-            .join("")}
-        </div>
-      </section>
+      <nav class="landing-nav-links" aria-label="메인 기능">
+        ${navLinks
+          .map(
+            (link) => `
+              <a class="landing-nav-link" href="${link.href}">
+                ${link.label}
+              </a>
+            `
+          )
+          .join("")}
+      </nav>
+
+      <div class="landing-nav-actions">
+        <a class="landing-nav-secondary" href="${currentLessonHref}">최근 문제</a>
+        <a class="landing-nav-primary" href="./problems.html">문제 시작</a>
+      </div>
+    </header>
+  `;
+}
+
+function renderQuickCards(currentLesson, stats) {
+  const cards = [
+    {
+      href: "./achievements.html",
+      eyebrow: "성과 확인",
+      title: "내 성취도 페이지",
+      detail: `완료 ${stats.completedLessons}개 / 오답 ${stats.wrongItems}문항`,
+    },
+    {
+      href: "./progress.html",
+      eyebrow: "진도 관리",
+      title: "학습 진행도 페이지",
+      detail: `선택 ${stats.selectedLessons}개 / 전체 ${stats.lessonCount}개`,
+    },
+    {
+      href: currentLesson ? `./problems.html?lesson=${currentLesson.id}` : "./problems.html",
+      eyebrow: "바로 풀이",
+      title: "문제 페이지",
+      detail: currentLesson ? `최근 코드 ${currentLesson.file}` : "원하는 코드 선택 후 시작",
+    },
+    {
+      href: "./review.html",
+      eyebrow: "복습 집중",
+      title: "오답노트",
+      detail: stats.wrongItems > 0 ? `${stats.wrongItems}문항 다시 보기` : "현재 오답 0문항",
+    },
+  ];
+
+  return cards
+    .map(
+      (card) => `
+        <a class="landing-quick-card" href="${card.href}">
+          <span class="landing-quick-eyebrow">${card.eyebrow}</span>
+          <strong>${card.title}</strong>
+          <span>${card.detail}</span>
+        </a>
+      `
+    )
+    .join("");
+}
+
+function renderLandingPage() {
+  const stats = getGlobalStats(appState);
+  const currentLesson = getExampleById(appState.selectedId);
+  const currentLessonHref = `./problems.html?lesson=${currentLesson.id}`;
+  const highlightStats = [
+    { label: "예제 수", value: String(stats.lessonCount) },
+    { label: "완료한 예제", value: String(stats.completedLessons) },
+    { label: "정답 문항", value: `${stats.solvedItems}/${stats.totalItems}` },
+    { label: "오답 문항", value: String(stats.wrongItems) },
+  ];
+
+  document.title = "C 자료구조 블록 퀴즈 | 학습 허브";
+
+  app.innerHTML = `
+    <div class="page-shell landing-page">
+      ${renderTopNav(currentLessonHref)}
+
+      <main class="landing-main">
+        <section class="landing-hero">
+          <div class="landing-hero-copy">
+            <p class="landing-kicker">C Data Structure Study Hub</p>
+            <h1 class="landing-headline">
+              문제를 <span class="landing-headline-accent">기능별로 나눈</span> 학습 허브
+            </h1>
+            <p class="landing-subcopy">
+              소개, 성취도, 학습 진행도, 문제, 오답노트를 각각 분리해 두었습니다.
+              필요한 화면으로 바로 들어가고, 문제 페이지에서는 코드별로 집중해서 풀이할 수 있습니다.
+            </p>
+          </div>
+
+          <section class="landing-launchpad" aria-label="빠른 시작">
+            <div class="landing-launchpad-frame">
+              <aside class="landing-rail-card">
+                <span class="landing-rail-badge">빠른 시작</span>
+                <strong>어디로 들어갈지 고르면 바로 이동합니다.</strong>
+                <p>기능별로 나뉜 페이지를 한 번에 훑고, 지금 필요한 화면으로 바로 들어가는 진입 패널입니다.</p>
+              </aside>
+
+              <div class="landing-launchpad-main">
+                <p class="landing-launchpad-label">오늘은 어디서 시작할까요?</p>
+                <div class="landing-quick-grid">
+                  ${renderQuickCards(currentLesson, stats)}
+                </div>
+                <div class="landing-stat-strip">
+                  ${highlightStats
+                    .map(
+                      (item) => `
+                        <div class="landing-stat-chip">
+                          <span>${item.label}</span>
+                          <strong>${item.value}</strong>
+                        </div>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </div>
+            </div>
+
+            <a class="landing-launch-button" href="${currentLessonHref}">
+              최근 코드 ${currentLesson.file} 이어서 풀기
+            </a>
+          </section>
+        </section>
+
+        <section class="landing-secondary-grid">
+          <article class="landing-info-card">
+            <span class="landing-info-kicker">학습 흐름</span>
+            <h2>한 페이지에 몰아넣지 않고, 역할별로 나눴습니다.</h2>
+            <p>
+              처음에는 허브에서 전체 구조를 보고, 이후에는 성취도나 진행도 페이지를 거쳐
+              문제 페이지 또는 오답노트로 진입하는 흐름을 기본으로 둡니다.
+            </p>
+          </article>
+
+          <article class="landing-info-card">
+            <span class="landing-info-kicker">현재 포인트</span>
+            <h2>${currentLesson.file}부터 바로 재개할 수 있습니다.</h2>
+            <p>
+              마지막으로 본 코드는 ${currentLesson.title}입니다. 이어서 풀거나, 문제 페이지에서
+              다른 코드를 세로 탐색기로 골라 시작할 수 있습니다.
+            </p>
+          </article>
+
+          <article class="landing-info-card landing-info-card-strong">
+            <span class="landing-info-kicker">추천 시작점</span>
+            <h2>처음이면 문제 페이지, 복습이면 오답노트가 가장 빠릅니다.</h2>
+            <div class="landing-info-actions">
+              <a class="landing-inline-link" href="./problems.html">문제 페이지 열기</a>
+              <a class="landing-inline-link" href="./review.html">오답노트 열기</a>
+            </div>
+          </article>
+        </section>
+      </main>
     </div>
   `;
 }
