@@ -160,7 +160,7 @@ function renderHero(allRecords, filteredRecords) {
         <p class="eyebrow">Learning Dashboard</p>
         <h1>학습 진행도</h1>
         <p class="hero-note">
-          기존 성취도와 학습 진행도를 한 화면으로 합쳐, 지금 상태를 한눈에 보고 바로 다음 행동을 고를 수 있게 정리했습니다.
+          진도, 오답, 집중할 예제를 한 화면에서 바로 보고 다음 행동으로 이어질 수 있게 정리했습니다.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="${getLessonHref(currentLesson.id)}">최근 문제 열기</a>
@@ -177,7 +177,7 @@ function renderHero(allRecords, filteredRecords) {
       <aside class="hero-panel hero-panel-stats">
         <div>
           <p class="eyebrow">Snapshot</p>
-          <p class="hero-note">전체 진행률, 현재 선택 상태, 복습 필요 항목을 같은 보드 안에서 바로 확인합니다.</p>
+          <p class="hero-note">지금 필요한 핵심 수치만 빠르게 요약합니다.</p>
         </div>
         <div class="stats-grid">
           <div class="stat-card">
@@ -204,11 +204,11 @@ function renderHero(allRecords, filteredRecords) {
 
 function renderFilters(filteredCount) {
   return `
-    <section class="progress-toolbar dashboard-panel dashboard-toolbar">
+    <section class="dashboard-strip dashboard-filter-strip">
       <div class="section-head">
         <div>
           <h2 class="section-title">보기 필터</h2>
-          <p class="section-copy">필터를 바꾸면 아래 테이블과 우선 확인 목록이 함께 바뀝니다.</p>
+          <p class="section-copy">필터를 바꾸면 아래 보드와 테이블이 함께 바뀝니다.</p>
         </div>
         <div class="section-badge">${filteredCount}개 표시</div>
       </div>
@@ -225,9 +225,9 @@ function renderFilters(filteredCount) {
           `
         ).join("")}
       </div>
-      <div class="dashboard-toolbar-note">
-        <span class="summary-pill">선택 체크는 문제 페이지와 같은 목록으로 공유됩니다.</span>
-        <span class="summary-pill">오답 있는 예제만 따로 모아 복습 흐름을 바로 만들 수 있습니다.</span>
+      <div class="dashboard-strip-note">
+        <span>선택 체크는 문제 페이지와 공유됩니다.</span>
+        <span>오답 필터로 복습 대상을 바로 추릴 수 있습니다.</span>
       </div>
     </section>
   `;
@@ -248,21 +248,13 @@ function renderOverviewPanel(allRecords) {
   const phaseSummary = getPhaseSummary(allRecords);
 
   return `
-    <section class="dashboard-panel">
-      <div class="section-head">
-        <div>
-          <h2 class="section-title">핵심 요약</h2>
-          <p class="section-copy">대시보드 상단에서 전체 현황을 숫자로 먼저 확인합니다.</p>
-        </div>
-      </div>
-      <div class="dashboard-kpi-grid">
-        ${renderKpiTile("전체 예제", String(stats.lessonCount), "이번 학습 보드에 포함된 총 예제 수")}
-        ${renderKpiTile("완료한 예제", String(phaseSummary.mastered), "모든 문항을 마친 예제", "is-primary")}
-        ${renderKpiTile("진행 중 예제", String(phaseSummary.active), "계속 이어서 풀 예제")}
-        ${renderKpiTile("미시작 예제", String(phaseSummary.untouched), "아직 손대지 않은 예제")}
-        ${renderKpiTile("선택한 예제", String(stats.selectedLessons), "집중 관리 중인 예제", "is-soft")}
-        ${renderKpiTile("남은 오답", String(stats.wrongItems), "복습이 필요한 문항 수", stats.wrongItems > 0 ? "is-alert" : "")}
-      </div>
+    <section class="dashboard-kpi-grid dashboard-kpi-strip">
+      ${renderKpiTile("전체 예제", String(stats.lessonCount), "전체 코드")}
+      ${renderKpiTile("완료", String(phaseSummary.mastered), "모든 문항 정리", "is-primary")}
+      ${renderKpiTile("진행 중", String(phaseSummary.active), "이어 풀 예제")}
+      ${renderKpiTile("미시작", String(phaseSummary.untouched), "아직 시작 전")}
+      ${renderKpiTile("선택", String(stats.selectedLessons), "집중 관리", "is-soft")}
+      ${renderKpiTile("오답", String(stats.wrongItems), "복습 필요", stats.wrongItems > 0 ? "is-alert" : "")}
     </section>
   `;
 }
@@ -316,10 +308,10 @@ function renderAnalysisGrid(allRecords) {
       <article class="dashboard-panel">
         <div class="section-head">
           <div>
-            <h2 class="section-title">예제별 진도 흐름</h2>
-            <p class="section-copy">각 예제의 현재 진도를 막대 높이로 비교해 한눈에 상태를 확인합니다.</p>
-          </div>
+          <h2 class="section-title">예제별 진도 흐름</h2>
+          <p class="section-copy">예제별 진도를 한 줄로 압축해 상태 변화를 빠르게 확인합니다.</p>
         </div>
+      </div>
         <div class="dashboard-bars">
           ${renderProgressBars(allRecords)}
         </div>
@@ -342,10 +334,10 @@ function renderAnalysisGrid(allRecords) {
       <article class="dashboard-panel">
         <div class="section-head">
           <div>
-            <h2 class="section-title">핵심 비율</h2>
-            <p class="section-copy">완료율, 정리도, 선택 집중도를 원형 게이지로 요약합니다.</p>
-          </div>
+          <h2 class="section-title">핵심 비율</h2>
+          <p class="section-copy">완료율과 선택 집중도를 짧게 요약합니다.</p>
         </div>
+      </div>
         <div class="dashboard-gauge-grid">
           ${renderGauge("전체 완료율", getCompletionRate(stats), "전체 문항 기준으로 얼마나 완료했는지 보여 줍니다.", "primary")}
           ${renderGauge("정답 정리도", getAttemptSuccessRate(stats), "이미 시도한 문항 중 정답으로 정리한 비율입니다.", "secondary")}
@@ -382,7 +374,7 @@ function renderLedgerPanel(allRecords) {
       <div class="section-head">
         <div>
           <h2 class="section-title">상태 분포</h2>
-          <p class="section-copy">성취도와 진행 상태를 한 화면에서 함께 정리한 통합 보드입니다.</p>
+          <p class="section-copy">완료, 진행 중, 미시작 비중을 한 번에 확인합니다.</p>
         </div>
       </div>
       <div class="dashboard-phase-list">
@@ -423,7 +415,7 @@ function renderFocusPanel(allRecords, filteredRecords) {
       <div class="section-head">
         <div>
           <h2 class="section-title">우선 확인</h2>
-          <p class="section-copy">현재 예제와 바로 손봐야 할 예제를 나란히 확인합니다.</p>
+          <p class="section-copy">지금 볼 예제와 바로 손봐야 할 항목만 모았습니다.</p>
         </div>
       </div>
       <div class="dashboard-focus-stack">
