@@ -3,6 +3,7 @@ import {
   createAppState,
   getExampleById,
   getGlobalStats,
+  getLessonStatus,
   getProblemModeFromUrl,
   isValidExampleId,
   saveState,
@@ -10,6 +11,7 @@ import {
 import {
   handleLessonChange,
   handleLessonClick,
+  getLessonProblemFlow,
   loadSource,
   openCodeSection,
   renderLessonLoading,
@@ -47,55 +49,66 @@ updateLessonQuery(state.selectedId);
 function renderPageShell(body) {
   const stats = getGlobalStats(state);
   const example = getExampleById(state.selectedId);
+  const lessonStatus = getLessonStatus(state, example);
+  const flow = getLessonProblemFlow(state, example);
   const currentMode = getProblemModeFromUrl() === "review" ? "오답 복습" : "일반 학습";
+  const overallPercent = stats.totalItems ? Math.round((stats.solvedItems / stats.totalItems) * 100) : 0;
+  const lessonPercent = lessonStatus.total
+    ? Math.round((lessonStatus.correct / lessonStatus.total) * 100)
+    : 0;
+  const currentQuestionLabel =
+    flow.items.length > 0 ? `${flow.currentIndex + 1}/${flow.items.length}` : "완료";
 
   return `
     <div class="page-shell feature-page problems-page">
       ${renderSiteNav("problems")}
-      <section class="hero hero-page">
-        <div class="hero-copy hero-copy-wide">
-          <p class="eyebrow">Problems</p>
-          <h1>문제</h1>
-          <p class="hero-text">
-            왼쪽에서 예제를 고르면 오른쪽에서 블록 해석, 출력, 빈칸, 복원 문제를 같은 흐름으로 바로 이어서 풉니다.
-            현재 보고 있는 코드와 전체 진도를 같이 확인하면서 다음 예제로 넘어가세요.
-          </p>
-          <div class="button-row hero-actions">
-            <a class="btn btn-primary" href="./review.html">오답노트 보기</a>
-            <a class="btn btn-secondary" href="./progress.html">학습 진행도 보기</a>
-          </div>
-          <div class="page-summary-strip">
-            <span class="summary-pill">현재 예제 ${example.file}</span>
-            <span class="summary-pill">현재 모드 ${currentMode}</span>
-            <span class="summary-pill">최근 진도 ${stats.solvedItems}/${stats.totalItems}</span>
-          </div>
-        </div>
-        <div class="hero-stats">
-          <div>
-            <p class="eyebrow">Workspace Stats</p>
-            <p class="meta-copy">문제를 푸는 동안에도 전체 진행도와 남은 오답을 계속 보면서 바로 이어서 학습할 수 있습니다.</p>
-          </div>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <span class="stat-label">예제 수</span>
-              <span class="stat-value">${stats.lessonCount}</span>
+      <main class="problem-dashboard">
+        <section class="progress-command-board problem-command-board">
+          <div class="progress-command-main">
+            <p class="eyebrow">Problems</p>
+            <div class="progress-command-head">
+              <h1>문제</h1>
+              <div class="progress-command-actions">
+                <a class="btn btn-primary" href="./review.html">오답노트</a>
+                <a class="btn btn-secondary" href="./progress.html">학습 진행도</a>
+              </div>
             </div>
-            <div class="stat-card">
-              <span class="stat-label">완료 예제</span>
-              <span class="stat-value">${stats.completedLessons}</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">맞힌 문항</span>
-              <span class="stat-value">${stats.solvedItems}/${stats.totalItems}</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">오답 문항</span>
-              <span class="stat-value">${stats.wrongItems}</span>
+            <p class="progress-command-copy">
+              왼쪽에서 코드를 고르고, 오른쪽에서는 현재 문항 하나에만 집중해 이전과 다음으로 넘기며 푸는 문제 작업대입니다.
+            </p>
+            <div class="progress-command-meta">
+              <span class="summary-pill">현재 예제 ${example.file}</span>
+              <span class="summary-pill">현재 모드 ${currentMode}</span>
+              <span class="summary-pill">현재 문제 ${currentQuestionLabel}</span>
+              <span class="summary-pill">현재 코드 진도 ${lessonStatus.correct}/${lessonStatus.total}</span>
+              <span class="summary-pill">현재 코드 오답 ${lessonStatus.wrong}문항</span>
             </div>
           </div>
-        </div>
-      </section>
-      ${body}
+          <div class="progress-command-summary">
+            <div class="progress-summary-row">
+              <span>전체 완료율</span>
+              <strong>${overallPercent}%</strong>
+              <small>정답 ${stats.solvedItems}/${stats.totalItems}</small>
+            </div>
+            <div class="progress-summary-row">
+              <span>현재 코드 완료율</span>
+              <strong>${lessonPercent}%</strong>
+              <small>${lessonStatus.correct}/${lessonStatus.total}</small>
+            </div>
+            <div class="progress-summary-row">
+              <span>보이는 문제</span>
+              <strong>${flow.items.length}</strong>
+              <small>현재 코드 기준</small>
+            </div>
+            <div class="progress-summary-row">
+              <span>남은 오답</span>
+              <strong>${stats.wrongItems}</strong>
+              <small>전체 예제 기준</small>
+            </div>
+          </div>
+        </section>
+        ${body}
+      </main>
     </div>
   `;
 }
