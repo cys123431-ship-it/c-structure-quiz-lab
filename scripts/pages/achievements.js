@@ -33,7 +33,7 @@ function renderSiteNav(currentKey) {
         <span class="site-brand-mark">DS</span>
         <span class="site-brand-copy">
           <strong>C 자료구조 블록 퀴즈</strong>
-          <span>기능별 페이지 학습 허브</span>
+          <span>학습 허브</span>
         </span>
       </a>
       <nav class="site-nav" aria-label="주요 기능">
@@ -223,7 +223,7 @@ function renderPage() {
   document.title = "C 자료구조 블록 퀴즈 | 성취도";
 
   app.innerHTML = `
-    <div class="page-shell">
+    <div class="page-shell feature-page achievement-page">
       <header class="hero">
         <div class="hero-copy">
           ${renderSiteNav("achievement")}
