@@ -24,6 +24,8 @@ const RECONSTRUCTION_STAGE_LIMITS = {
   dense: 6,
 };
 
+const PROBLEM_NAV_PAGE_SIZE = 5;
+
 const COMMON_IDENTIFIER_TOKENS = new Set([
   "include",
   "define",
@@ -92,9 +94,10 @@ export function renderControlPanel(state) {
 }
 
 export function renderProblemSelector(state) {
-  const visibleExamples = getVisibleExamples(state);
+  const { pageExamples, startIndex, endIndex, totalItems, currentPage, totalPages } =
+    getProblemNavSnapshot(state);
 
-  if (visibleExamples.length === 0) {
+  if (totalItems === 0) {
     return `
       <div class="empty-list">
         <p>${escapeHtml(getEmptyListMessage(state.filter))}</p>
@@ -103,8 +106,18 @@ export function renderProblemSelector(state) {
   }
 
   return `
+    <div class="problem-nav-pager">
+      <div class="problem-nav-range">
+        <strong>코드 ${startIndex + 1}-${endIndex}</strong>
+        <small>전체 ${totalItems}개 중 ${currentPage + 1}/${totalPages} 묶음</small>
+      </div>
+      <div class="button-row">
+        <button class="btn btn-secondary btn-inline" data-action="problem-nav-prev-page" ${currentPage === 0 ? "disabled" : ""}>이전</button>
+        <button class="btn btn-secondary btn-inline" data-action="problem-nav-next-page" ${currentPage >= totalPages - 1 ? "disabled" : ""}>다음</button>
+      </div>
+    </div>
     <div class="problem-nav-list">
-      ${visibleExamples
+      ${pageExamples
         .map((example) => {
           const lessonStatus = getLessonStatus(state, example);
           const percent = Math.round((lessonStatus.correct / lessonStatus.total) * 100);
@@ -148,7 +161,7 @@ export function renderProblemSidebar(state) {
     <section class="lesson-panel detail-tools problem-sidebar">
       <div class="section-heading">
         <h2>문제 탐색기</h2>
-        <p>코드를 세로 목록에서 골라서 바로 문제를 풀 수 있습니다.</p>
+        <p>코드 전체를 다 펼치지 않고, 묶음 단위로 넘기면서 필요한 예제를 골라 문제를 풀 수 있습니다.</p>
       </div>
       ${renderControlPanel(state)}
       <div class="problem-nav-shell">
@@ -496,6 +509,57 @@ function ensureProblemStepState(state) {
   if (!state.problemStepByLesson || typeof state.problemStepByLesson !== "object") {
     state.problemStepByLesson = {};
   }
+}
+
+function ensureProblemNavPageState(state, visibleExamples) {
+  const totalPages = Math.max(1, Math.ceil(visibleExamples.length / PROBLEM_NAV_PAGE_SIZE));
+
+  if (!Number.isInteger(state.problemNavPage) || state.problemNavPage < 0) {
+    const selectedIndex = visibleExamples.findIndex((example) => example.id === state.selectedId);
+    state.problemNavPage = selectedIndex === -1 ? 0 : Math.floor(selectedIndex / PROBLEM_NAV_PAGE_SIZE);
+  }
+
+  if (state.problemNavPage >= totalPages) {
+    state.problemNavPage = totalPages - 1;
+  }
+
+  return state.problemNavPage;
+}
+
+function focusProblemNavPageOnLesson(state, lessonId) {
+  const visibleExamples = getVisibleExamples(state);
+  const selectedIndex = visibleExamples.findIndex((example) => example.id === lessonId);
+  state.problemNavPage = selectedIndex === -1 ? 0 : Math.floor(selectedIndex / PROBLEM_NAV_PAGE_SIZE);
+}
+
+function getProblemNavSnapshot(state) {
+  const visibleExamples = getVisibleExamples(state);
+
+  if (visibleExamples.length === 0) {
+    state.problemNavPage = 0;
+
+    return {
+      pageExamples: [],
+      startIndex: 0,
+      endIndex: 0,
+      totalItems: 0,
+      currentPage: 0,
+      totalPages: 0,
+    };
+  }
+
+  const currentPage = ensureProblemNavPageState(state, visibleExamples);
+  const startIndex = currentPage * PROBLEM_NAV_PAGE_SIZE;
+  const pageExamples = visibleExamples.slice(startIndex, startIndex + PROBLEM_NAV_PAGE_SIZE);
+
+  return {
+    pageExamples,
+    startIndex,
+    endIndex: startIndex + pageExamples.length,
+    totalItems: visibleExamples.length,
+    currentPage,
+    totalPages: Math.ceil(visibleExamples.length / PROBLEM_NAV_PAGE_SIZE),
+  };
 }
 
 function getStoredProblemStep(state, lessonId) {
@@ -1074,6 +1138,7 @@ export async function handleLessonClick(event, { state, rerender, navigateToLess
     const lessonId = actionButton.dataset.lessonId;
     if (lessonId) {
       state.selectedId = lessonId;
+      focusProblemNavPageOnLesson(state, lessonId);
       navigateToLesson(lessonId);
       rerender();
     }
@@ -1090,9 +1155,23 @@ export async function handleLessonClick(event, { state, rerender, navigateToLess
         state.selectedId = getVisibleExamples(state)[0]?.id || examples[0].id;
         navigateToLesson(state.selectedId);
       }
+      focusProblemNavPageOnLesson(state, state.selectedId);
       rerender();
     }
 
+    return true;
+  }
+
+  if (action === "problem-nav-prev-page" || action === "problem-nav-next-page") {
+    captureCurrentQuestionDraft(state, getExampleById(state.selectedId));
+    const visibleExamples = getVisibleExamples(state);
+    const totalPages = Math.max(1, Math.ceil(visibleExamples.length / PROBLEM_NAV_PAGE_SIZE));
+    ensureProblemNavPageState(state, visibleExamples);
+    state.problemNavPage =
+      action === "problem-nav-prev-page"
+        ? Math.max(0, state.problemNavPage - 1)
+        : Math.min(totalPages - 1, state.problemNavPage + 1);
+    rerender();
     return true;
   }
 
