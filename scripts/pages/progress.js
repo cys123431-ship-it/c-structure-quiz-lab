@@ -22,14 +22,6 @@ const FILTERS = [
   { key: "selected-wrong", label: "선택 오답" },
 ];
 
-const PAGE_LINKS = [
-  { href: "./index.html", label: "소개" },
-  { href: "./achievements.html", label: "성취도" },
-  { href: "./progress.html", label: "학습 진행도" },
-  { href: "./problems.html", label: "문제" },
-  { href: "./review.html", label: "오답노트" },
-];
-
 function loadSelectedLessonId() {
   const params = new URLSearchParams(window.location.search);
   const lessonId = params.get("lesson");
@@ -133,70 +125,48 @@ function getBucketedLessons(lessonCards) {
   );
 }
 
-function renderLocalSiteNav() {
-  return `
-    <header class="topbar">
-      <a class="topbar-brand" href="./index.html">
-        <span class="topbar-brand-mark">DS</span>
-        <span class="topbar-brand-copy">
-          <strong>C 자료구조 블록 퀴즈</strong>
-          <span>학습 허브</span>
-        </span>
-      </a>
-      <nav class="topbar-nav" aria-label="주요 기능">
-        ${PAGE_LINKS.map(
-          (item) => `
-            <a class="topbar-link ${item.href === "./progress.html" ? "topbar-link-active" : ""}" href="${item.href}">
-              ${escapeHtml(item.label)}
-            </a>
-          `
-        ).join("")}
-      </nav>
-
-      <div class="topbar-actions">
-        <a class="topbar-action topbar-action-secondary" href="${getLessonHref(pageState.selectedId)}">최근 문제</a>
-        <a class="topbar-action topbar-action-primary" href="./problems.html">문제 시작</a>
-      </div>
-    </header>
-  `;
-}
-
 function renderSiteNav() {
   if (layoutHelpers && typeof layoutHelpers.renderSiteNav === "function") {
     return layoutHelpers.renderSiteNav("progress");
   }
 
-  return renderLocalSiteNav();
+  return "";
 }
 
 function renderHero() {
   const stats = getGlobalStats(pageState);
   const lessonCards = getLessonCards();
-  const average = getAverageProgress(lessonCards);
+  const phaseSummary = getPhaseSummary(lessonCards);
   const currentLesson = getExampleById(pageState.selectedId);
   const currentStatus = getLessonStatus(pageState, currentLesson);
+  const average = getAverageProgress(lessonCards);
+  const currentPercent = getLessonPercent(currentStatus);
+  const activeFilter = FILTERS.find((item) => item.key === pageState.filter)?.label || "전체";
 
   return `
     <section class="page-hero">
       <div class="hero-panel hero-panel-copy">
-        ${renderSiteNav()}
-        <div>
-          <p class="eyebrow">Learning Progress</p>
-          <h1>진도를 한눈에 보고, 바로 문제 페이지로 넘어가요.</h1>
-          <p class="hero-note">
-            지금까지 푼 예제, 오답이 남은 예제, 아직 시작하지 않은 예제를 나눠서 보여 주는 전용 진도 페이지입니다.
-          </p>
-        </div>
+        <p class="eyebrow">Progress</p>
+        <h1>지금 어디까지 풀었는지 바로 확인합니다.</h1>
+        <p class="hero-note">
+          이 페이지는 예제별 진도, 선택 여부, 남은 오답을 한 번에 보는 화면입니다.
+          아래 필터로 필요한 묶음만 추려 보고, 바로 다음 문제로 이어서 들어가면 됩니다.
+        </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="${getLessonHref(currentLesson.id)}">최근 문제 열기</a>
           <a class="btn btn-secondary" href="./review.html">오답노트 보기</a>
           <a class="btn btn-secondary" href="./achievements.html">성취도 보기</a>
         </div>
+        <div class="page-summary-strip">
+          <span class="summary-pill">현재 예제 ${escapeHtml(currentLesson.file)}</span>
+          <span class="summary-pill">현재 필터 ${escapeHtml(activeFilter)}</span>
+          <span class="summary-pill">현재 진도 ${currentPercent}%</span>
+        </div>
       </div>
       <aside class="hero-panel hero-panel-stats">
         <div>
-          <p class="eyebrow">Progress Snapshot</p>
-          <p class="hero-note">현재 선택 상태와 평균 진도를 함께 보여 줍니다.</p>
+          <p class="eyebrow">Snapshot</p>
+          <p class="hero-note">전체 흐름과 현재 선택한 예제 상태를 같이 보면서 다음 이동을 정하면 됩니다.</p>
         </div>
         <div class="progress-summary-grid">
           <div class="stat-card">
@@ -225,9 +195,9 @@ function renderHero() {
           </div>
         </div>
         <div class="page-summary-strip">
-          <span class="summary-pill">진행 중 ${getPhaseSummary(lessonCards).active}개</span>
-          <span class="summary-pill">미시작 ${getPhaseSummary(lessonCards).untouched}개</span>
-          <span class="summary-pill">완료 ${getPhaseSummary(lessonCards).mastered}개</span>
+          <span class="summary-pill">진행 중 ${phaseSummary.active}개</span>
+          <span class="summary-pill">미시작 ${phaseSummary.untouched}개</span>
+          <span class="summary-pill">완료 ${phaseSummary.mastered}개</span>
         </div>
       </aside>
     </section>
@@ -436,6 +406,7 @@ function renderFeatureNavigator() {
 function renderPage() {
   app.innerHTML = `
     <div class="page-shell feature-page progress-page">
+      ${renderSiteNav()}
       ${renderHero()}
       <main class="progress-layout">
         ${renderFilters()}

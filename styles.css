@@ -2177,6 +2177,11 @@ body.feature-body .detail-layout {
   gap: 24px;
 }
 
+body.feature-body .hero,
+body.feature-body .page-hero {
+  align-items: start;
+}
+
 body.feature-body .page-section,
 body.feature-body .hero-panel,
 body.feature-body .hero-copy,
@@ -2220,17 +2225,31 @@ body.feature-body .hero-panel-stats {
 
 body.feature-body .hero-copy,
 body.feature-body .hero-panel-copy {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  display: grid;
+  gap: 18px;
+  padding: 0;
   justify-items: center;
   text-align: center;
 }
 
 body.feature-body .hero-copy h1,
 body.feature-body .hero-panel-copy h1 {
-  max-width: 9ch;
+  max-width: 13ch;
   color: var(--text);
   font-size: clamp(2.8rem, 5vw, 4.8rem);
   line-height: 1.02;
   letter-spacing: -0.04em;
+}
+
+body.feature-body .hero-copy.hero-copy-wide {
+  gap: 18px;
+  max-width: min(980px, 100%);
+  margin: 0 auto;
 }
 
 body.feature-body .eyebrow {
@@ -2253,7 +2272,7 @@ body.feature-body .empty-state p {
 
 body.feature-body .hero-text,
 body.feature-body .hero-note {
-  max-width: 58ch;
+  max-width: 62ch;
   text-align: center;
   margin-left: auto;
   margin-right: auto;
@@ -2261,6 +2280,15 @@ body.feature-body .hero-note {
 
 body.feature-body .hero-actions {
   justify-content: center;
+}
+
+body.feature-body .page-summary-strip {
+  justify-content: center;
+}
+
+body.feature-body .hero-stats,
+body.feature-body .hero-panel-stats {
+  align-self: stretch;
 }
 
 body.feature-body .stat-card,
