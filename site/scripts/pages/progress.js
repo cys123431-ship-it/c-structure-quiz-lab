@@ -135,24 +135,28 @@ function getBucketedLessons(lessonCards) {
 
 function renderLocalSiteNav() {
   return `
-    <header class="site-header">
-      <a class="site-brand" href="./index.html">
-        <span class="site-brand-mark">DS</span>
-        <span class="site-brand-copy">
+    <header class="topbar">
+      <a class="topbar-brand" href="./index.html">
+        <span class="topbar-brand-mark">DS</span>
+        <span class="topbar-brand-copy">
           <strong>C 자료구조 블록 퀴즈</strong>
           <span>학습 허브</span>
         </span>
       </a>
-      <nav class="site-nav" aria-label="주요 기능">
+      <nav class="topbar-nav" aria-label="주요 기능">
         ${PAGE_LINKS.map(
           (item) => `
-            <a class="site-nav-link ${item.href === "./progress.html" ? "site-nav-link-active" : ""}" href="${item.href}">
+            <a class="topbar-link ${item.href === "./progress.html" ? "topbar-link-active" : ""}" href="${item.href}">
               ${escapeHtml(item.label)}
             </a>
           `
         ).join("")}
       </nav>
-      <a class="brand-chip" href="${getLessonHref(pageState.selectedId)}">최근 문제 ${escapeHtml(getExampleById(pageState.selectedId).file)}</a>
+
+      <div class="topbar-actions">
+        <a class="topbar-action topbar-action-secondary" href="${getLessonHref(pageState.selectedId)}">최근 문제</a>
+        <a class="topbar-action topbar-action-primary" href="./problems.html">문제 시작</a>
+      </div>
     </header>
   `;
 }
