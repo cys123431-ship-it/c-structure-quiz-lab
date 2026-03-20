@@ -4,8 +4,8 @@ import { escapeHtml } from "../core/utils.js";
 const app = document.querySelector("#app");
 const state = createAppState();
 
-const navigationModule = await import("../core/navigation.js").catch(() => null);
-const shellModule = navigationModule ? null : await import("../core/shell.js");
+const navigationModule = await import("../core/navigation.js?v=20260320b").catch(() => null);
+const shellModule = navigationModule ? null : await import("../core/shell.js?v=20260320b");
 const renderSiteNav = navigationModule?.renderSiteNav ?? shellModule.renderSiteNav;
 
 function getReviewHref(lessonId) {
@@ -144,7 +144,7 @@ function renderPage() {
         </p>
         <div class="button-row hero-actions">
           <a class="btn btn-primary" href="./problems.html">문제 페이지로 이동</a>
-          <a class="btn btn-secondary" href="./achievements.html">성취도 보기</a>
+          <a class="btn btn-secondary" href="./progress.html">학습 진행도 보기</a>
           <a class="btn btn-secondary" href="./index.html">학습 허브로 이동</a>
         </div>
       </header>

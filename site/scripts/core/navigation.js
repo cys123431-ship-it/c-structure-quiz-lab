@@ -3,7 +3,6 @@ import { escapeHtml } from "./utils.js";
 
 export const PAGE_LINKS = [
   { key: "home", href: "./index.html", label: "소개" },
-  { key: "achievement", href: "./achievements.html", label: "성취도" },
   { key: "progress", href: "./progress.html", label: "학습 진행도" },
   { key: "problems", href: "./problems.html", label: "문제" },
   { key: "review", href: "./review.html", label: "오답노트" },

@@ -4,7 +4,6 @@ import {
   getExampleById,
   getGlobalStats,
   getLessonHref,
-  getEmptyListMessage,
   getLessonStatus,
   getVisibleExamples,
   saveState,
@@ -61,68 +60,82 @@ function getPhaseKey(status) {
   return "untouched";
 }
 
-function getPhaseSummary(lessonCards) {
-  return lessonCards.reduce(
-    (acc, item) => {
+function getPhaseSummary(records) {
+  return records.reduce(
+    (acc, record) => {
       acc.total += 1;
-
-      if (item.phaseKey === "mastered") {
-        acc.mastered += 1;
-      } else if (item.phaseKey === "active") {
-        acc.active += 1;
-      } else {
-        acc.untouched += 1;
-      }
-
+      acc[record.phaseKey] += 1;
       return acc;
     },
     { total: 0, mastered: 0, active: 0, untouched: 0 }
   );
 }
 
-function getAverageProgress(lessonCards) {
-  if (lessonCards.length === 0) {
+function getAverageProgress(records) {
+  if (records.length === 0) {
     return 0;
   }
 
-  return Math.round(lessonCards.reduce((sum, item) => sum + item.percent, 0) / lessonCards.length);
+  return Math.round(records.reduce((sum, record) => sum + record.percent, 0) / records.length);
 }
 
-function getLessonCards(filter = pageState.filter) {
-  const visibleExamples = getVisibleExamples(pageState).filter((example) =>
-    filter === "all"
-      ? true
-      : filter === "selected"
-        ? pageState.selectedLessons.has(example.id)
-        : filter === "wrong"
-          ? getLessonStatus(pageState, example).wrong > 0
-          : pageState.selectedLessons.has(example.id) && getLessonStatus(pageState, example).wrong > 0
-  );
+function getCompletionRate(stats) {
+  return stats.totalItems ? Math.round((stats.solvedItems / stats.totalItems) * 100) : 0;
+}
 
-  return visibleExamples.map((example) => {
-    const status = getLessonStatus(pageState, example);
-    const percent = getLessonPercent(status);
+function getAttemptSuccessRate(stats) {
+  const attempted = stats.solvedItems + stats.wrongItems;
+  return attempted ? Math.round((stats.solvedItems / attempted) * 100) : 0;
+}
 
-    return {
-      example,
-      status,
-      percent,
-      phaseKey: getPhaseKey(status),
-      phaseLabel: getLessonPhase(status),
-      selected: pageState.selectedLessons.has(example.id),
-      active: example.id === pageState.selectedId,
-    };
+function getSelectionRate(stats) {
+  return stats.lessonCount ? Math.round((stats.selectedLessons / stats.lessonCount) * 100) : 0;
+}
+
+function buildLessonRecord(example) {
+  const status = getLessonStatus(pageState, example);
+  const percent = getLessonPercent(status);
+
+  return {
+    example,
+    status,
+    percent,
+    phaseKey: getPhaseKey(status),
+    phaseLabel: getLessonPhase(status),
+    selected: pageState.selectedLessons.has(example.id),
+    active: example.id === pageState.selectedId,
+  };
+}
+
+function getAllLessonRecords() {
+  return examples.map(buildLessonRecord);
+}
+
+function getFilteredLessonRecords(allRecords, filter = pageState.filter) {
+  const visibleIds = new Set(getVisibleExamples(pageState, filter).map((example) => example.id));
+  return allRecords.filter((record) => visibleIds.has(record.example.id));
+}
+
+function getAttentionScore(record) {
+  return record.status.wrong * 100 + (record.selected ? 18 : 0) + (record.active ? 12 : 0) + (100 - record.percent);
+}
+
+function getFocusLessons(records) {
+  const ranked = [...records].sort((left, right) => {
+    const scoreDiff = getAttentionScore(right) - getAttentionScore(left);
+
+    if (scoreDiff !== 0) {
+      return scoreDiff;
+    }
+
+    if (right.status.wrong !== left.status.wrong) {
+      return right.status.wrong - left.status.wrong;
+    }
+
+    return left.percent - right.percent;
   });
-}
 
-function getBucketedLessons(lessonCards) {
-  return lessonCards.reduce(
-    (acc, item) => {
-      acc[item.phaseKey].push(item);
-      return acc;
-    },
-    { mastered: [], active: [], untouched: [] }
-  );
+  return ranked.slice(0, 5);
 }
 
 function renderSiteNav() {
@@ -133,86 +146,71 @@ function renderSiteNav() {
   return "";
 }
 
-function renderHero() {
+function renderHero(allRecords, filteredRecords) {
   const stats = getGlobalStats(pageState);
-  const lessonCards = getLessonCards();
-  const phaseSummary = getPhaseSummary(lessonCards);
+  const phaseSummary = getPhaseSummary(allRecords);
   const currentLesson = getExampleById(pageState.selectedId);
   const currentStatus = getLessonStatus(pageState, currentLesson);
-  const average = getAverageProgress(lessonCards);
   const currentPercent = getLessonPercent(currentStatus);
   const activeFilter = FILTERS.find((item) => item.key === pageState.filter)?.label || "전체";
 
   return `
     <section class="page-hero">
       <div class="hero-panel hero-panel-copy">
-        <p class="eyebrow">Progress</p>
+        <p class="eyebrow">Learning Dashboard</p>
         <h1>학습 진행도</h1>
         <p class="hero-note">
-          이 페이지는 예제별 진도, 선택 여부, 남은 오답을 한 번에 보는 화면입니다.
-          아래 필터로 필요한 묶음만 추려 보고, 바로 다음 문제로 이어서 들어가면 됩니다.
+          기존 성취도와 학습 진행도를 한 화면으로 합쳐, 지금 상태를 한눈에 보고 바로 다음 행동을 고를 수 있게 정리했습니다.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="${getLessonHref(currentLesson.id)}">최근 문제 열기</a>
+          <a class="btn btn-secondary" href="./problems.html">문제 페이지 보기</a>
           <a class="btn btn-secondary" href="./review.html">오답노트 보기</a>
-          <a class="btn btn-secondary" href="./achievements.html">성취도 보기</a>
         </div>
         <div class="page-summary-strip">
           <span class="summary-pill">현재 예제 ${escapeHtml(currentLesson.file)}</span>
           <span class="summary-pill">현재 필터 ${escapeHtml(activeFilter)}</span>
           <span class="summary-pill">현재 진도 ${currentPercent}%</span>
+          <span class="summary-pill">표시 중 ${filteredRecords.length}개</span>
         </div>
       </div>
       <aside class="hero-panel hero-panel-stats">
         <div>
           <p class="eyebrow">Snapshot</p>
-          <p class="hero-note">전체 흐름과 현재 선택한 예제 상태를 같이 보면서 다음 이동을 정하면 됩니다.</p>
+          <p class="hero-note">전체 진행률, 현재 선택 상태, 복습 필요 항목을 같은 보드 안에서 바로 확인합니다.</p>
         </div>
-        <div class="progress-summary-grid">
+        <div class="stats-grid">
           <div class="stat-card">
-            <span class="stat-label">예제 수</span>
-            <span class="stat-value">${stats.lessonCount}</span>
+            <span class="stat-label">전체 완료율</span>
+            <span class="stat-value">${getCompletionRate(stats)}%</span>
           </div>
           <div class="stat-card">
             <span class="stat-label">평균 진도</span>
-            <span class="stat-value">${average}%</span>
+            <span class="stat-value">${getAverageProgress(allRecords)}%</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">완료한 예제</span>
-            <span class="stat-value">${stats.completedLessons}</span>
+            <span class="stat-label">진행 중 예제</span>
+            <span class="stat-value">${phaseSummary.active}</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">선택한 예제</span>
-            <span class="stat-value">${stats.selectedLessons}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">오답 문항</span>
+            <span class="stat-label">남은 오답</span>
             <span class="stat-value">${stats.wrongItems}</span>
           </div>
-          <div class="stat-card">
-            <span class="stat-label">현재 예제 진도</span>
-            <span class="stat-value">${currentStatus.correct}/${currentStatus.total}</span>
-          </div>
-        </div>
-        <div class="page-summary-strip">
-          <span class="summary-pill">진행 중 ${phaseSummary.active}개</span>
-          <span class="summary-pill">미시작 ${phaseSummary.untouched}개</span>
-          <span class="summary-pill">완료 ${phaseSummary.mastered}개</span>
         </div>
       </aside>
     </section>
   `;
 }
 
-function renderFilters() {
+function renderFilters(filteredCount) {
   return `
-    <section class="progress-toolbar">
-      <div class="progress-toolbar-row">
+    <section class="progress-toolbar dashboard-panel dashboard-toolbar">
+      <div class="section-head">
         <div>
           <h2 class="section-title">보기 필터</h2>
-          <p class="section-copy">전역 필터를 바꾸면 아래 카드도 함께 바뀌고, 선택 상태는 그대로 유지됩니다.</p>
+          <p class="section-copy">필터를 바꾸면 아래 테이블과 우선 확인 목록이 함께 바뀝니다.</p>
         </div>
-        <div class="section-badge">진도 페이지</div>
+        <div class="section-badge">${filteredCount}개 표시</div>
       </div>
       <div class="filter-row">
         ${FILTERS.map(
@@ -227,191 +225,360 @@ function renderFilters() {
           `
         ).join("")}
       </div>
-      <div class="chip-row">
-        <span class="summary-pill">선택된 예제는 체크박스로 따로 모을 수 있어요.</span>
-        <span class="summary-pill">카드의 버튼을 누르면 문제 페이지로 바로 이동합니다.</span>
+      <div class="dashboard-toolbar-note">
+        <span class="summary-pill">선택 체크는 문제 페이지와 같은 목록으로 공유됩니다.</span>
+        <span class="summary-pill">오답 있는 예제만 따로 모아 복습 흐름을 바로 만들 수 있습니다.</span>
       </div>
     </section>
   `;
 }
 
-function renderLessonCard(item) {
-  const { example, status, percent, selected, active } = item;
+function renderKpiTile(label, value, detail, tone = "") {
+  return `
+    <article class="dashboard-kpi-tile ${tone}">
+      <span class="dashboard-kpi-label">${escapeHtml(label)}</span>
+      <strong class="dashboard-kpi-value">${escapeHtml(value)}</strong>
+      <span class="dashboard-kpi-detail">${escapeHtml(detail)}</span>
+    </article>
+  `;
+}
+
+function renderOverviewPanel(allRecords) {
+  const stats = getGlobalStats(pageState);
+  const phaseSummary = getPhaseSummary(allRecords);
 
   return `
-    <article class="lesson-card ${active ? "lesson-card-active" : ""}">
-      <div class="lesson-card-head">
+    <section class="dashboard-panel">
+      <div class="section-head">
         <div>
-          <div class="lesson-card-meta">
-            <span class="lesson-code">${escapeHtml(example.file)}</span>
-            <span class="lesson-badge">${escapeHtml(item.phaseLabel)}</span>
+          <h2 class="section-title">핵심 요약</h2>
+          <p class="section-copy">대시보드 상단에서 전체 현황을 숫자로 먼저 확인합니다.</p>
+        </div>
+      </div>
+      <div class="dashboard-kpi-grid">
+        ${renderKpiTile("전체 예제", String(stats.lessonCount), "이번 학습 보드에 포함된 총 예제 수")}
+        ${renderKpiTile("완료한 예제", String(phaseSummary.mastered), "모든 문항을 마친 예제", "is-primary")}
+        ${renderKpiTile("진행 중 예제", String(phaseSummary.active), "계속 이어서 풀 예제")}
+        ${renderKpiTile("미시작 예제", String(phaseSummary.untouched), "아직 손대지 않은 예제")}
+        ${renderKpiTile("선택한 예제", String(stats.selectedLessons), "집중 관리 중인 예제", "is-soft")}
+        ${renderKpiTile("남은 오답", String(stats.wrongItems), "복습이 필요한 문항 수", stats.wrongItems > 0 ? "is-alert" : "")}
+      </div>
+    </section>
+  `;
+}
+
+function renderGauge(label, value, description, tone) {
+  const safeValue = Math.max(0, Math.min(100, value));
+
+  return `
+    <article class="dashboard-gauge dashboard-gauge-${tone}" style="--gauge-value:${safeValue};">
+      <div class="dashboard-gauge-ring">
+        <div class="dashboard-gauge-core">
+          <strong>${safeValue}%</strong>
+          <span>${escapeHtml(label)}</span>
+        </div>
+      </div>
+      <div class="dashboard-gauge-copy">
+        <h3>${escapeHtml(label)}</h3>
+        <p>${escapeHtml(description)}</p>
+      </div>
+    </article>
+  `;
+}
+
+function renderProgressBars(allRecords) {
+  return allRecords
+    .map((record) => {
+      const minHeight = record.percent > 0 ? Math.max(record.percent, 12) : 8;
+      const shortCode = record.example.file.match(/(\d{2})\.c$/)?.[1] ?? record.example.file;
+
+      return `
+        <a class="dashboard-bar ${record.active ? "dashboard-bar-active" : ""}" href="${getLessonHref(record.example.id)}">
+          <span class="dashboard-bar-track">
+            <span
+              class="dashboard-bar-fill dashboard-bar-fill-${record.phaseKey}"
+              style="height:${minHeight}%"
+            ></span>
+          </span>
+          <span class="dashboard-bar-label">${escapeHtml(shortCode)}</span>
+        </a>
+      `;
+    })
+    .join("");
+}
+
+function renderAnalysisGrid(allRecords) {
+  const stats = getGlobalStats(pageState);
+  const wrongLessonCount = allRecords.filter((record) => record.status.wrong > 0).length;
+
+  return `
+    <section class="dashboard-grid dashboard-grid-primary">
+      <article class="dashboard-panel">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">예제별 진도 흐름</h2>
+            <p class="section-copy">각 예제의 현재 진도를 막대 높이로 비교해 한눈에 상태를 확인합니다.</p>
           </div>
-          <h3 class="lesson-card-title">${escapeHtml(example.title)}</h3>
-          <p class="lesson-card-copy">${escapeHtml(example.theme)}</p>
         </div>
-        <div class="status-badges">
-          <span class="lesson-badge ${active ? "lesson-badge-active" : ""}">${active ? "최근 본 문제" : "목록"}</span>
-          ${selected ? '<span class="lesson-badge lesson-badge-selected">선택됨</span>' : ""}
+        <div class="dashboard-bars">
+          ${renderProgressBars(allRecords)}
+        </div>
+        <div class="dashboard-bars-legend">
+          <span class="dashboard-legend-item">
+            <span class="dashboard-legend-dot is-mastered"></span>
+            완료
+          </span>
+          <span class="dashboard-legend-item">
+            <span class="dashboard-legend-dot is-active"></span>
+            진행 중
+          </span>
+          <span class="dashboard-legend-item">
+            <span class="dashboard-legend-dot is-untouched"></span>
+            미시작
+          </span>
+        </div>
+      </article>
+
+      <article class="dashboard-panel">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">핵심 비율</h2>
+            <p class="section-copy">완료율, 정리도, 선택 집중도를 원형 게이지로 요약합니다.</p>
+          </div>
+        </div>
+        <div class="dashboard-gauge-grid">
+          ${renderGauge("전체 완료율", getCompletionRate(stats), "전체 문항 기준으로 얼마나 완료했는지 보여 줍니다.", "primary")}
+          ${renderGauge("정답 정리도", getAttemptSuccessRate(stats), "이미 시도한 문항 중 정답으로 정리한 비율입니다.", "secondary")}
+          ${renderGauge("선택 집중도", getSelectionRate(stats), `${stats.selectedLessons}개 예제를 따로 추려 관리 중입니다.`, wrongLessonCount > 0 ? "warm" : "primary")}
+        </div>
+      </article>
+    </section>
+  `;
+}
+
+function renderPhaseRow(label, count, total, tone) {
+  const percent = total ? Math.round((count / total) * 100) : 0;
+  const width = count > 0 ? Math.max(percent, 6) : 0;
+
+  return `
+    <div class="dashboard-phase-row">
+      <div class="dashboard-phase-head">
+        <span>${escapeHtml(label)}</span>
+        <strong>${count}개 · ${percent}%</strong>
+      </div>
+      <span class="dashboard-phase-bar">
+        <span class="dashboard-phase-fill dashboard-phase-fill-${tone}" style="width:${width}%"></span>
+      </span>
+    </div>
+  `;
+}
+
+function renderLedgerPanel(allRecords) {
+  const stats = getGlobalStats(pageState);
+  const summary = getPhaseSummary(allRecords);
+
+  return `
+    <article class="dashboard-panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">상태 분포</h2>
+          <p class="section-copy">성취도와 진행 상태를 한 화면에서 함께 정리한 통합 보드입니다.</p>
         </div>
       </div>
-      <p class="lesson-card-copy">${escapeHtml(example.goal)}</p>
-      <div class="lesson-card-progress">
-        <div class="lesson-card-progress-row">
-          <span class="section-badge">진도 ${status.correct}/${status.total}</span>
-          <span class="section-badge ${status.wrong > 0 ? "is-hot" : ""}">오답 ${status.wrong}</span>
-        </div>
-        <div class="progress-bar" aria-hidden="true">
-          <span style="width: ${percent}%"></span>
-        </div>
-        <div class="lesson-card-progress-row">
-          <span class="progress-note">${percent}% 완료</span>
-          <span class="progress-note">${selected ? "선택 목록에 포함됨" : "선택되지 않음"}</span>
-        </div>
+      <div class="dashboard-phase-list">
+        ${renderPhaseRow("완료", summary.mastered, stats.lessonCount, "mastered")}
+        ${renderPhaseRow("진행 중", summary.active, stats.lessonCount, "active")}
+        ${renderPhaseRow("미시작", summary.untouched, stats.lessonCount, "untouched")}
       </div>
-      <div class="lesson-card-foot">
-        <label class="lesson-select">
-          <input
-            type="checkbox"
-            data-action="toggle-selection"
-            data-lesson-id="${example.id}"
-            ${selected ? "checked" : ""}
-          />
-          선택
-        </label>
-        <div class="card-actions">
-          <a class="btn btn-secondary" href="${getLessonHref(example.id)}">문제 열기</a>
-          <a class="btn btn-primary" href="${getLessonHref(example.id)}">이어 풀기</a>
+      <div class="dashboard-ledger">
+        <div class="dashboard-ledger-row">
+          <span>맞힌 문항</span>
+          <strong>${stats.solvedItems}/${stats.totalItems}</strong>
+        </div>
+        <div class="dashboard-ledger-row">
+          <span>남은 오답</span>
+          <strong>${stats.wrongItems}문항</strong>
+        </div>
+        <div class="dashboard-ledger-row">
+          <span>선택한 예제</span>
+          <strong>${stats.selectedLessons}개</strong>
+        </div>
+        <div class="dashboard-ledger-row">
+          <span>평균 진도</span>
+          <strong>${getAverageProgress(allRecords)}%</strong>
         </div>
       </div>
     </article>
   `;
 }
 
-function renderLessonSections() {
-  const lessonCards = getLessonCards();
-  const filteredLabel = FILTERS.find((item) => item.key === pageState.filter)?.label || "전체";
-  const buckets = getBucketedLessons(lessonCards);
-  const visibleCount = lessonCards.length;
-
-  if (visibleCount === 0) {
-    return `
-      <section class="progress-section">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">예제 대시보드</h2>
-            <p class="section-copy">현재 필터: ${escapeHtml(filteredLabel)}. 표시할 예제가 없습니다.</p>
-          </div>
-          <div class="section-badge">0개 표시</div>
-        </div>
-        <div class="bucket-empty">${escapeHtml(getEmptyListMessage(pageState.filter))}</div>
-      </section>
-    `;
-  }
+function renderFocusPanel(allRecords, filteredRecords) {
+  const sourceRecords = filteredRecords.length > 0 ? filteredRecords : allRecords;
+  const focusLessons = getFocusLessons(sourceRecords);
+  const currentLesson = getExampleById(pageState.selectedId);
+  const currentRecord = allRecords.find((record) => record.example.id === currentLesson.id) ?? sourceRecords[0];
 
   return `
-    <section class="progress-section">
+    <article class="dashboard-panel">
       <div class="section-head">
         <div>
-          <h2 class="section-title">예제 대시보드</h2>
-          <p class="section-copy">현재 필터: ${escapeHtml(filteredLabel)}. 카드의 선택 상태와 진도를 함께 확인할 수 있습니다.</p>
+          <h2 class="section-title">우선 확인</h2>
+          <p class="section-copy">현재 예제와 바로 손봐야 할 예제를 나란히 확인합니다.</p>
         </div>
-        <div class="section-badge">${visibleCount}개 표시</div>
       </div>
+      <div class="dashboard-focus-stack">
+        <div class="dashboard-focus-current">
+          <div class="dashboard-table-lesson-head">
+            <span class="lesson-code">${escapeHtml(currentRecord.example.file)}</span>
+            <span class="lesson-badge">${escapeHtml(currentRecord.phaseLabel)}</span>
+          </div>
+          <strong>${escapeHtml(currentRecord.example.title)}</strong>
+          <p class="dashboard-table-lesson-copy">${escapeHtml(currentRecord.example.theme)}</p>
+          <div class="dashboard-focus-meta">
+            <span class="summary-pill">진도 ${currentRecord.status.correct}/${currentRecord.status.total}</span>
+            <span class="summary-pill">오답 ${currentRecord.status.wrong}</span>
+            <span class="summary-pill">${currentRecord.percent}% 완료</span>
+          </div>
+        </div>
 
-      ${renderBucket("완료", buckets.mastered, "mastered")}
-      ${renderBucket("진행 중", buckets.active, "active")}
-      ${renderBucket("미시작", buckets.untouched, "untouched")}
+        <div class="dashboard-focus-list">
+          ${focusLessons
+            .map(
+              (record) => `
+                <a class="dashboard-focus-item" href="${getLessonHref(record.example.id)}">
+                  <div class="dashboard-focus-item-head">
+                    <span class="lesson-code">${escapeHtml(record.example.file)}</span>
+                    ${record.status.wrong > 0 ? `<span class="lesson-badge lesson-badge-wrong">오답 ${record.status.wrong}</span>` : `<span class="lesson-badge">${escapeHtml(record.phaseLabel)}</span>`}
+                  </div>
+                  <strong>${escapeHtml(record.example.title)}</strong>
+                  <span class="dashboard-table-lesson-copy">${escapeHtml(record.percent)}% 완료</span>
+                </a>
+              `
+            )
+            .join("")}
+        </div>
+
+        <div class="dashboard-link-list">
+          <a class="dashboard-link-row" href="./review.html">
+            <span>오답노트로 이동</span>
+            <strong>복습</strong>
+          </a>
+          <a class="dashboard-link-row" href="./problems.html">
+            <span>전체 문제 목록 보기</span>
+            <strong>문제</strong>
+          </a>
+          <a class="dashboard-link-row" href="./index.html">
+            <span>학습 허브로 돌아가기</span>
+            <strong>허브</strong>
+          </a>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderSecondaryGrid(allRecords, filteredRecords) {
+  return `
+    <section class="dashboard-grid dashboard-grid-secondary">
+      ${renderLedgerPanel(allRecords)}
+      ${renderFocusPanel(allRecords, filteredRecords)}
     </section>
   `;
 }
 
-function renderBucket(title, lessons, key) {
-  const descriptions = {
-    mastered: "모든 문항을 맞힌 예제입니다. 이어서 다른 예제로 넘어가도 좋아요.",
-    active: "진행 중인 예제입니다. 오답이 남아 있거나 일부만 해결된 상태예요.",
-    untouched: "아직 시작하지 않은 예제입니다. 가볍게 하나 골라 들어가 보세요.",
-  };
-
+function renderLessonRow(record) {
   return `
-    <div class="bucket-section">
-      <div class="section-head">
-        <div>
-          <h3 class="section-title">${escapeHtml(title)}</h3>
-          <p class="section-copy">${escapeHtml(descriptions[key])}</p>
+    <div class="dashboard-table-row ${record.active ? "is-active" : ""}">
+      <label class="dashboard-table-check">
+        <input
+          type="checkbox"
+          data-action="toggle-selection"
+          data-lesson-id="${record.example.id}"
+          ${record.selected ? "checked" : ""}
+        />
+        선택
+      </label>
+
+      <div class="dashboard-table-lesson">
+        <div class="dashboard-table-lesson-head">
+          <span class="lesson-code">${escapeHtml(record.example.file)}</span>
+          <span class="lesson-badge">${escapeHtml(record.phaseLabel)}</span>
+          ${record.active ? '<span class="lesson-badge lesson-badge-active">최근</span>' : ""}
+          ${record.status.wrong > 0 ? `<span class="lesson-badge lesson-badge-wrong">오답 ${record.status.wrong}</span>` : ""}
         </div>
-        <div class="section-badge">${lessons.length}개</div>
+        <strong>${escapeHtml(record.example.title)}</strong>
+        <span class="dashboard-table-lesson-copy">${escapeHtml(record.example.theme)}</span>
       </div>
-      <div class="bucket-list">
-        ${
-          lessons.length === 0
-            ? `<div class="bucket-empty">${escapeHtml(getEmptyMessage(key))}</div>`
-            : lessons.map(renderLessonCard).join("")
-        }
+
+      <div class="dashboard-table-progress">
+        <span class="progress-bar"><span style="width:${record.percent}%"></span></span>
+        <div class="dashboard-table-progress-meta">
+          <span>진도 ${record.status.correct}/${record.status.total}</span>
+          <strong>${record.percent}%</strong>
+        </div>
+      </div>
+
+      <div class="dashboard-table-count">${record.status.wrong}문항</div>
+
+      <div class="dashboard-table-action">
+        <a class="btn btn-secondary btn-inline" href="${getLessonHref(record.example.id)}">문제 열기</a>
       </div>
     </div>
   `;
 }
 
-function getEmptyMessage(key) {
-  if (pageState.filter !== "all" && pageState.filter !== "selected" && pageState.filter !== "wrong" && pageState.filter !== "selected-wrong") {
-    return "현재 필터와 일치하는 예제가 없습니다.";
-  }
-
-  if (key === "mastered") {
-    return "아직 완료한 예제가 없습니다. 하나씩 풀어 보면 바로 채워집니다.";
-  }
-
-  if (key === "active") {
-    return "현재 진행 중인 예제가 없습니다. 새로 하나 선택해 보세요.";
-  }
-
-  return "아직 시작하지 않은 예제가 없습니다.";
-}
-
-function renderFeatureNavigator() {
-  if (layoutHelpers && typeof layoutHelpers.renderFeatureNavigator === "function") {
-    return layoutHelpers.renderFeatureNavigator("progress");
-  }
+function renderLessonTable(filteredRecords) {
+  const activeFilter = FILTERS.find((item) => item.key === pageState.filter)?.label || "전체";
 
   return `
-    <section class="progress-feature">
+    <section class="dashboard-panel">
       <div class="section-head">
         <div>
-          <h2 class="section-title">다른 기능으로 이동</h2>
-          <p class="section-copy">현재 진도에서 바로 다른 페이지로 이어갈 수 있습니다.</p>
+          <h2 class="section-title">예제 테이블</h2>
+          <p class="section-copy">현재 필터: ${escapeHtml(activeFilter)}. 카드 대신 표 형식으로 전체 상태를 빠르게 비교합니다.</p>
         </div>
+        <div class="section-badge">${filteredRecords.length}개</div>
       </div>
-      <div class="progress-feature-grid">
-        <a class="feature-card" href="./index.html">
-          <strong>소개 페이지</strong>
-          <span>메인 허브로 돌아가기</span>
-        </a>
-        <a class="feature-card" href="./achievements.html">
-          <strong>성취도 페이지</strong>
-          <span>완료 현황을 크게 보기</span>
-        </a>
-        <a class="feature-card" href="./review.html">
-          <strong>오답노트</strong>
-          <span>틀린 문제만 다시 보기</span>
-        </a>
-        <a class="feature-card" href="${getLessonHref(pageState.selectedId)}">
-          <strong>최근 문제</strong>
-          <span>마지막으로 본 예제로 이동</span>
-        </a>
-      </div>
+      ${
+        filteredRecords.length > 0
+          ? `
+            <div class="dashboard-table">
+              <div class="dashboard-table-head">
+                <span>선택</span>
+                <span>예제</span>
+                <span>진도</span>
+                <span>오답</span>
+                <span>이동</span>
+              </div>
+              ${filteredRecords.map(renderLessonRow).join("")}
+            </div>
+          `
+          : `
+            <div class="dashboard-empty">
+              현재 필터와 일치하는 예제가 없습니다. 다른 필터를 선택하면 바로 목록이 갱신됩니다.
+            </div>
+          `
+      }
     </section>
   `;
 }
 
 function renderPage() {
+  const allRecords = getAllLessonRecords();
+  const filteredRecords = getFilteredLessonRecords(allRecords);
+
+  document.title = "학습 진행도 | C 자료구조 블록 퀴즈";
+
   app.innerHTML = `
     <div class="page-shell feature-page progress-page">
       ${renderSiteNav()}
-      ${renderHero()}
-      <main class="progress-layout">
-        ${renderFilters()}
-        ${renderLessonSections()}
-        ${renderFeatureNavigator()}
+      ${renderHero(allRecords, filteredRecords)}
+      <main class="progress-layout dashboard-layout">
+        ${renderFilters(filteredRecords.length)}
+        ${renderOverviewPanel(allRecords)}
+        ${renderAnalysisGrid(allRecords)}
+        ${renderSecondaryGrid(allRecords, filteredRecords)}
+        ${renderLessonTable(filteredRecords)}
       </main>
     </div>
   `;
@@ -448,8 +615,7 @@ document.addEventListener("change", (event) => {
     return;
   }
 
-  const lessonId = checkbox.dataset.lessonId;
-  toggleSelection(lessonId);
+  toggleSelection(checkbox.dataset.lessonId);
   renderPage();
 });
 
@@ -458,10 +624,12 @@ document.addEventListener("click", (event) => {
 
   if (filterButton) {
     const filter = filterButton.dataset.filter;
+
     if (FILTERS.some((item) => item.key === filter)) {
       setFilter(filter);
       renderPage();
     }
+
     return;
   }
 
@@ -469,6 +637,7 @@ document.addEventListener("click", (event) => {
 
   if (lessonLink) {
     const lessonId = new URL(lessonLink.href).searchParams.get("lesson");
+
     if (lessonId) {
       setSelectedLesson(lessonId);
     }
@@ -484,9 +653,9 @@ async function init() {
   }
 
   try {
-    layoutHelpers = await import("../core/navigation.js");
+    layoutHelpers = await import("../core/navigation.js?v=20260320b");
   } catch {
-    layoutHelpers = await import("../core/shell.js");
+    layoutHelpers = await import("../core/shell.js?v=20260320b");
   }
 
   renderPage();

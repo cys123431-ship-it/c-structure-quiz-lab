@@ -1,4 +1,4 @@
-import { renderSiteNav } from "../core/shell.js";
+import { renderSiteNav } from "../core/shell.js?v=20260320b";
 import {
   createAppState,
   getExampleById,
