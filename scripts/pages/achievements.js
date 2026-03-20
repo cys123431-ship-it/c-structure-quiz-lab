@@ -232,7 +232,7 @@ function renderPage() {
 
       <header class="hero-copy hero-copy-wide">
         <p class="eyebrow">Achievement Dashboard</p>
-        <h1>배운 내용을 성취 기준으로 정리하고<br />다음 학습 대상을 바로 고르는 페이지</h1>
+        <h1>성취도</h1>
         <p class="hero-text">
           완료한 예제, 아직 진행중인 예제, 아직 시작하지 않은 예제를 한 흐름 안에서 확인할 수 있게
           구성했습니다. 지금 어디까지 왔는지 먼저 파악하고, 이어서 풀 문제나 다시 볼 문제를 바로 고를 수 있습니다.
