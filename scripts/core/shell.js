@@ -1,5 +1,5 @@
 import { escapeHtml } from "./utils.js";
-export { renderSiteNav } from "./navigation.js";
+export { renderSiteNav } from "./navigation.js?v=20260320b";
 
 export function renderHeroCard({ eyebrow, title, description, actions = "" }) {
   return `

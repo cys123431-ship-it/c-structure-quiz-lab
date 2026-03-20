@@ -1,4 +1,4 @@
-import { renderSiteNav } from "../core/navigation.js";
+import { renderSiteNav } from "../core/navigation.js?v=20260320b";
 import { createAppState, getExampleById, getGlobalStats, isValidExampleId } from "../core/store.js";
 
 const app = document.querySelector("#app");
@@ -40,22 +40,22 @@ function redirectLegacyLessonIfNeeded() {
 function renderQuickCards(currentLesson, stats) {
   const cards = [
     {
-      href: "./achievements.html",
-      eyebrow: "성과 확인",
-      title: "내 성취도 페이지",
-      detail: `완료 ${stats.completedLessons}개 / 오답 ${stats.wrongItems}문항`,
-    },
-    {
       href: "./progress.html",
-      eyebrow: "진도 관리",
-      title: "학습 진행도 페이지",
-      detail: `선택 ${stats.selectedLessons}개 / 전체 ${stats.lessonCount}개`,
+      eyebrow: "통합 보드",
+      title: "학습 진행도 대시보드",
+      detail: `완료 ${stats.completedLessons}개 / 진행중 ${stats.lessonCount - stats.completedLessons}개`,
     },
     {
       href: currentLesson ? `./problems.html?lesson=${currentLesson.id}` : "./problems.html",
-      eyebrow: "바로 풀이",
+      eyebrow: "최근 학습",
+      title: "최근 문제 이어 풀기",
+      detail: currentLesson ? `${currentLesson.file} 바로 재개` : "마지막으로 보던 코드 이어서 풀기",
+    },
+    {
+      href: "./problems.html",
+      eyebrow: "전체 풀이",
       title: "문제 페이지",
-      detail: currentLesson ? `최근 코드 ${currentLesson.file}` : "원하는 코드 선택 후 시작",
+      detail: `선택 ${stats.selectedLessons}개 / 전체 ${stats.lessonCount}개`,
     },
     {
       href: "./review.html",
@@ -127,8 +127,8 @@ function renderLandingPage() {
               <aside class="landing-rail-card">
                 <span class="landing-rail-badge">학습 흐름</span>
                 <strong>허브에서 방향을 정하고, 아래에서 바로 원하는 페이지로 진입하세요.</strong>
-                <p>상태를 확인하고 싶으면 성취도와 진행도로, 바로 문제를 풀고 싶으면 문제 페이지와 오답노트로
-                곧바로 이어질 수 있게 정리했습니다.</p>
+                <p>전체 상태를 보고 싶으면 학습 진행도 대시보드로, 바로 문제를 풀고 싶으면 문제 페이지와
+                오답노트로 곧바로 이어질 수 있게 정리했습니다.</p>
               </aside>
 
               <div class="landing-launchpad-main">
@@ -150,7 +150,7 @@ function renderLandingPage() {
             <span class="landing-info-kicker">학습 흐름</span>
             <h2>한 페이지에 몰아넣지 않고, 역할별로 나눴습니다.</h2>
             <p>
-              처음에는 허브에서 전체 구조를 보고, 이후에는 성취도나 진행도 페이지를 거쳐
+              처음에는 허브에서 전체 구조를 보고, 이후에는 학습 진행도 대시보드를 거쳐
               문제 페이지 또는 오답노트로 진입하는 흐름을 기본으로 둡니다.
             </p>
           </article>

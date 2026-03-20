@@ -3,7 +3,6 @@ import { getLessonHref } from "./store.js";
 
 const SITE_LINKS = [
   { id: "home", href: "./index.html", label: "소개" },
-  { id: "achievements", href: "./achievements.html", label: "내 성취도" },
   { id: "progress", href: "./progress.html", label: "학습 진행도" },
   { id: "problems", href: "./problems.html", label: "문제 페이지" },
   { id: "review", href: "./review.html", label: "오답노트" },
