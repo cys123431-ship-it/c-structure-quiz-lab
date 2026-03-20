@@ -28,26 +28,30 @@ function renderSiteNav(currentKey) {
   const currentLesson = getExampleById(appState.selectedId);
 
   return `
-    <header class="site-header">
-      <a class="site-brand" href="./index.html">
-        <span class="site-brand-mark">DS</span>
-        <span class="site-brand-copy">
+    <header class="topbar">
+      <a class="topbar-brand" href="./index.html">
+        <span class="topbar-brand-mark">DS</span>
+        <span class="topbar-brand-copy">
           <strong>C 자료구조 블록 퀴즈</strong>
           <span>학습 허브</span>
         </span>
       </a>
-      <nav class="site-nav" aria-label="주요 기능">
+      <nav class="topbar-nav" aria-label="주요 기능">
         ${items
           .map(
             (item) => `
-              <a class="site-nav-link ${item.id === currentKey ? "site-nav-link-active" : ""}" href="${item.href}">
+              <a class="topbar-link ${item.id === currentKey ? "topbar-link-active" : ""}" href="${item.href}">
                 ${escapeHtml(item.label)}
               </a>
             `
           )
           .join("")}
       </nav>
-      <a class="brand-chip" href="${getLessonHref(currentLesson.id)}">최근 문제 ${escapeHtml(currentLesson.file)}</a>
+
+      <div class="topbar-actions">
+        <a class="topbar-action topbar-action-secondary" href="${getLessonHref(currentLesson.id)}">최근 문제</a>
+        <a class="topbar-action topbar-action-primary" href="./problems.html">문제 시작</a>
+      </div>
     </header>
   `;
 }

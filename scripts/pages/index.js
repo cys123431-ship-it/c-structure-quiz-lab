@@ -1,3 +1,4 @@
+import { renderSiteNav } from "../core/navigation.js";
 import { createAppState, getExampleById, getGlobalStats, isValidExampleId } from "../core/store.js";
 
 const app = document.querySelector("#app");
@@ -34,44 +35,6 @@ function redirectLegacyLessonIfNeeded() {
 
   window.location.replace(buildRedirectUrl(lessonId));
   return true;
-}
-
-function renderTopNav(currentLessonHref) {
-  const navLinks = [
-    { href: "./achievements.html", label: "성취도" },
-    { href: "./progress.html", label: "학습 센터" },
-    { href: "./problems.html", label: "문제 페이지" },
-    { href: "./review.html", label: "오답노트" },
-  ];
-
-  return `
-    <header class="landing-nav">
-      <a class="landing-brand" href="./index.html">
-        <span class="landing-brand-mark">DS</span>
-        <span class="landing-brand-copy">
-          <strong>C 자료구조 블록 퀴즈</strong>
-          <span>학습 허브</span>
-        </span>
-      </a>
-
-      <nav class="landing-nav-links" aria-label="메인 기능">
-        ${navLinks
-          .map(
-            (link) => `
-              <a class="landing-nav-link" href="${link.href}">
-                ${link.label}
-              </a>
-            `
-          )
-          .join("")}
-      </nav>
-
-      <div class="landing-nav-actions">
-        <a class="landing-nav-secondary" href="${currentLessonHref}">최근 문제</a>
-        <a class="landing-nav-primary" href="./problems.html">문제 시작</a>
-      </div>
-    </header>
-  `;
 }
 
 function renderQuickCards(currentLesson, stats) {
@@ -130,7 +93,7 @@ function renderLandingPage() {
 
   app.innerHTML = `
     <div class="page-shell landing-page">
-      ${renderTopNav(currentLessonHref)}
+      ${renderSiteNav("home")}
 
       <main class="landing-main">
         <section class="landing-hero">
