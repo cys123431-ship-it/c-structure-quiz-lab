@@ -3319,6 +3319,29 @@ body.feature-body .problems-page .problem-nav-list {
   gap: 0;
 }
 
+body.feature-body .problem-nav-pager {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(95, 76, 201, 0.1);
+}
+
+body.feature-body .problem-nav-range {
+  display: grid;
+  gap: 4px;
+}
+
+body.feature-body .problem-nav-range strong {
+  font-size: 0.98rem;
+}
+
+body.feature-body .problem-nav-range small {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 body.feature-body .problems-page .problem-nav-card {
   gap: 10px;
   padding: 14px 0;
@@ -3487,6 +3510,111 @@ body.feature-body .problem-summary-details {
   margin-top: 0;
 }
 
+body.feature-body .review-dashboard {
+  display: grid;
+  gap: 18px;
+}
+
+body.feature-body .review-insight-list,
+body.feature-body .review-table {
+  display: grid;
+  gap: 0;
+}
+
+body.feature-body .review-insight-row {
+  display: grid;
+  gap: 8px;
+  padding: 14px 0;
+  border-top: 1px solid rgba(95, 76, 201, 0.1);
+  color: inherit;
+  text-decoration: none;
+}
+
+body.feature-body .review-insight-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+body.feature-body .review-insight-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+body.feature-body .review-insight-row strong,
+body.feature-body .review-table-lesson strong {
+  font-size: 1rem;
+}
+
+body.feature-body .review-insight-meta,
+body.feature-body .review-table-progress-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+}
+
+body.feature-body .review-insight-meta .progress-bar {
+  flex: 1;
+}
+
+body.feature-body .review-table-shell {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding-left: 22px;
+  border-left: 1px solid rgba(95, 76, 201, 0.1);
+}
+
+body.feature-body .review-table-head,
+body.feature-body .review-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr) 84px 100px;
+  gap: 12px;
+  align-items: center;
+}
+
+body.feature-body .review-table-head {
+  padding: 0 6px 10px;
+  border-bottom: 1px solid rgba(95, 76, 201, 0.12);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+body.feature-body .review-table-row {
+  padding: 14px 6px;
+  border-bottom: 1px solid rgba(95, 76, 201, 0.1);
+}
+
+body.feature-body .review-table-lesson {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+body.feature-body .review-table-progress {
+  display: grid;
+  gap: 8px;
+}
+
+body.feature-body .review-table-progress-meta {
+  justify-content: space-between;
+  font-size: 0.84rem;
+}
+
+body.feature-body .review-table-count {
+  color: var(--text);
+  font-weight: 700;
+  text-align: center;
+}
+
+body.feature-body .review-table-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (max-width: 1080px) {
   body.feature-body .problem-shell-grid,
   body.feature-body .problem-lesson-overview {
@@ -3502,6 +3630,13 @@ body.feature-body .problem-summary-details {
   }
 
   body.feature-body .problem-lesson-summary {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid rgba(95, 76, 201, 0.1);
+    padding-top: 12px;
+  }
+
+  body.feature-body .review-table-shell {
     padding-left: 0;
     border-left: 0;
     border-top: 1px solid rgba(95, 76, 201, 0.1);
@@ -3534,6 +3669,12 @@ body.feature-body .problem-summary-details {
     padding: 9px 10px;
   }
 
+  body.feature-body .problem-nav-pager,
+  body.feature-body .review-table-progress-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   body.feature-body .problem-question-head,
   body.feature-body .problem-question-footer {
     flex-direction: column;
@@ -3546,6 +3687,20 @@ body.feature-body .problem-summary-details {
   body.feature-body .problem-question-footer .btn {
     flex: 1;
     min-width: 0;
+  }
+
+  body.feature-body .review-table-head {
+    display: none;
+  }
+
+  body.feature-body .review-table-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px 0;
+  }
+
+  body.feature-body .review-table-action {
+    justify-content: flex-start;
   }
 }
 
