@@ -103,35 +103,38 @@ function renderLandingPage() {
               <span class="landing-headline-accent">학습</span> 허브
             </h1>
             <p class="landing-subcopy">
-              소개, 성취도, 학습 진행도, 문제, 오답노트를 각각 분리해 두었습니다.
-              필요한 화면으로 바로 들어가고, 문제 페이지에서는 코드별로 집중해서 풀이할 수 있습니다.
+              지금 필요한 화면을 먼저 고르고, 문제 풀이와 복습은 각 페이지에서 더 깊게 이어 갈 수 있도록
+              학습 흐름을 분리했습니다. 허브에서는 전체 구조를 빠르게 잡고, 이어서 풀 코드와 복습 대상까지
+              바로 결정할 수 있습니다.
             </p>
+          </div>
+
+          <div class="landing-stat-strip" aria-label="학습 현황 요약">
+            ${highlightStats
+              .map(
+                (item) => `
+                  <div class="landing-stat-chip">
+                    <span>${item.label}</span>
+                    <strong>${item.value}</strong>
+                  </div>
+                `
+              )
+              .join("")}
           </div>
 
           <section class="landing-launchpad" aria-label="빠른 시작">
             <div class="landing-launchpad-frame">
               <aside class="landing-rail-card">
-                <span class="landing-rail-badge">빠른 시작</span>
-                <strong>어디로 들어갈지 고르면 바로 이동합니다.</strong>
-                <p>기능별로 나뉜 페이지를 한 번에 훑고, 지금 필요한 화면으로 바로 들어가는 진입 패널입니다.</p>
+                <span class="landing-rail-badge">학습 흐름</span>
+                <strong>허브에서 방향을 정하고, 아래에서 바로 원하는 페이지로 진입하세요.</strong>
+                <p>상태를 확인하고 싶으면 성취도와 진행도로, 바로 문제를 풀고 싶으면 문제 페이지와 오답노트로
+                곧바로 이어질 수 있게 정리했습니다.</p>
               </aside>
 
               <div class="landing-launchpad-main">
                 <p class="landing-launchpad-label">오늘은 어디서 시작할까요?</p>
                 <div class="landing-quick-grid">
                   ${renderQuickCards(currentLesson, stats)}
-                </div>
-                <div class="landing-stat-strip">
-                  ${highlightStats
-                    .map(
-                      (item) => `
-                        <div class="landing-stat-chip">
-                          <span>${item.label}</span>
-                          <strong>${item.value}</strong>
-                        </div>
-                      `
-                    )
-                    .join("")}
                 </div>
               </div>
             </div>

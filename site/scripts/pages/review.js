@@ -135,23 +135,27 @@ function renderPage() {
   app.innerHTML = `
     <div class="page-shell feature-page review-page">
       ${renderSiteNav("review")}
-      <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Wrong Answer Notebook</p>
-          <h1>틀린 문제만 모아<br />바로 다시 풀 수 있는 오답노트</h1>
-          <p class="hero-text">
-            오답이 남은 예제만 골라서 보여 주기 때문에, 다시 공부할 대상을 빠르게 찾을 수 있습니다.
-            각 카드에서 바로 문제 페이지로 이동해 review 모드로 이어서 풀어 보세요.
-          </p>
-        </div>
-        <div class="hero-stats">
-          <div>
-            <p class="eyebrow">Current Review</p>
-            <p class="meta-copy">남은 오답 문항과 진도를 한눈에 보고, 바로 다음 복습으로 넘어갈 수 있습니다.</p>
-          </div>
-          ${renderSummaryCards(globalStats, wrongLessons)}
+      <header class="hero-copy hero-copy-wide">
+        <p class="eyebrow">Wrong Answer Notebook</p>
+        <h1>틀린 문제만 추려서<br />바로 다시 풀 수 있는 오답노트</h1>
+        <p class="hero-text">
+          복습이 필요한 예제만 빠르게 모아서 보여 주기 때문에, 다시 볼 대상을 찾느라 헤매지 않아도 됩니다.
+          남은 오답 수를 먼저 확인하고, 필요한 예제만 골라 review 모드로 바로 이어서 풀어 보세요.
+        </p>
+        <div class="button-row hero-actions">
+          <a class="btn btn-primary" href="./problems.html">문제 페이지로 이동</a>
+          <a class="btn btn-secondary" href="./achievements.html">성취도 보기</a>
+          <a class="btn btn-secondary" href="./index.html">학습 허브로 이동</a>
         </div>
       </header>
+
+      <section class="summary-card">
+        <div class="section-heading">
+          <h2>현재 복습 요약</h2>
+          <p>남아 있는 오답과 전체 풀이 진도를 먼저 보고, 아래 목록에서 바로 다시 풀 예제를 고를 수 있습니다.</p>
+        </div>
+        ${renderSummaryCards(globalStats, wrongLessons)}
+      </section>
 
       <main class="home-layout">
         ${
